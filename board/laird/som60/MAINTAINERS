@@ -1,0 +1,6 @@
+SOM60 MODULE
+M:	Ben Whitten <ben.whitten@lairdtech.com>
+S:	Maintained
+F:	board/laird/som60/
+F:	include/configs/som60.h
+F:	configs/som60_defconfig
