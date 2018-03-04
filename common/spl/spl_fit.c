@@ -8,7 +8,7 @@
 #include <common.h>
 #include <errno.h>
 #include <image.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <spl.h>
 DECLARE_GLOBAL_DATA_PTR;
 
