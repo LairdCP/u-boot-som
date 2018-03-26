@@ -16,8 +16,6 @@
 #define CONFIG_ARCH_CPU_INIT
 
 #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
-#define CONFIG_IMAGE_FORMAT_LEGACY /* FIXME: As soon as FIT images are enabled in BR, remove this */
-
 
 #ifndef CONFIG_SPL_BUILD
 #define CONFIG_SKIP_LOWLEVEL_INIT
@@ -88,7 +86,7 @@
 #define CONFIG_PMECC_SECTOR_SIZE	512
 
 
-#define CONFIG_SYS_LOAD_ADDR			0x22000000 /* load address */
+#define CONFIG_SYS_LOAD_ADDR			0x21000000 /* load address */
 
 /* SPL */
 #define CONFIG_SPL_FRAMEWORK
