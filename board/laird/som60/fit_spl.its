@@ -23,7 +23,7 @@
 			load = <0x23f00000>;
 			firmware-version = <1>;
 			hash {
-				algo = "sha1";
+				algo = "sha256";
 			};
 		};
 		fdt {
@@ -33,7 +33,7 @@
 			compression = "none";
 			fdt-version = <1>;
 			hash {
-				algo = "sha1";
+				algo = "sha256";
 			};
 		};
 	};

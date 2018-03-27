@@ -21,7 +21,7 @@
 
 	signature {
 		key-dev {
-			/*required = "conf";*/
+			required = "conf";
 			algo = "sha256,rsa2048";
 			key-name-hint = "dev";
 		};
