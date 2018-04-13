@@ -21,6 +21,21 @@
 #define CONFIG_SKIP_LOWLEVEL_INIT
 #endif
 
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"bootside=a\0"						\
+	"_setbootvol=if test ${bootside} = a;then "	\
+			"setenv bootvol 1;"			\
+		"else "							\
+			"setenv bootvol 4;"			\
+		"fi\0"							\
+	"_formatubi=nand erase.part ubi;"							\
+		"ubi part ubi;"											\
+		"for part in a b; do "									\
+			"ubi create kernel_${part} 800000 static;"			\
+			"ubi create rootfs_${part} 5200000 static;"			\
+			"ubi create rootfs_data_${part} 1E00000 dynamic;"	\
+		"done\0"
+
 #define CONFIG_ENV_VARS_UBOOT_CONFIG
 
 /* general purpose I/O */
