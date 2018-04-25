@@ -46,8 +46,10 @@ obj-y += list_sort.o
 endif
 
 obj-$(CONFIG_RSA) += rsa/
+ifneq ($(CONFIG_SHA_PROG_HW_ACCEL),y)
 obj-$(CONFIG_SHA1) += sha1.o
 obj-$(CONFIG_SHA256) += sha256.o
+endif
 
 obj-$(CONFIG_$(SPL_)ZLIB) += zlib/
 obj-$(CONFIG_$(SPL_)GZIP) += gunzip.o
