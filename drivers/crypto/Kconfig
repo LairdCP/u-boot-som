@@ -2,4 +2,9 @@ menu "Hardware crypto devices"
 
 source drivers/crypto/fsl/Kconfig
 
+config ATMEL_SHA
+	bool "Atmel SHA Driver support"
+	help
+	  Enables the Atmel SHA accelerator.
+
 endmenu
