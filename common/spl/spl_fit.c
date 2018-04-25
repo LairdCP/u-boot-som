@@ -10,6 +10,7 @@
 #include <image.h>
 #include <libfdt.h>
 #include <spl.h>
+DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_SYS_BOOTM_LEN
 #define CONFIG_SYS_BOOTM_LEN	(64 << 20)
@@ -92,7 +93,11 @@ static int spl_fit_get_image_node(const void *fit, int images,
 	if (err)
 		return err;
 
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+	printf("%s: '%s'\n", type, str);
+#else
 	debug("%s: '%s'\n", type, str);
+#endif
 
 	node = fdt_subnode_offset(fit, images, str);
 	if (node < 0) {
@@ -227,6 +232,14 @@ static int spl_load_fit_image(struct spl_load_info *info, ulong sector,
 		src = (void *)data;
 	}
 
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+	/* Verify image */
+	puts("   Verifying Hash Integrity ... ");
+	if (!fit_image_verify(fit, node))
+		return -EPERM;
+	puts("OK\n");
+#endif
+
 #ifdef CONFIG_SPL_FIT_IMAGE_POST_PROCESS
 	board_fit_image_post_process(&src, &length);
 #endif
@@ -333,6 +346,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	int images, ret;
 	int base_offset, align_len = ARCH_DMA_MINALIGN - 1;
 	int index = 0;
+	int cfg_noffset;
 
 	/*
 	 * For FIT with external data, figure out where the external images
@@ -368,6 +382,16 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	      sector, sectors, fit, count);
 	if (count == 0)
 		return -EIO;
+
+#ifdef CONFIG_SPL_FIT_SIGNATURE
+	cfg_noffset = fit_conf_find_compat(fit, gd_fdt_blob());
+	puts("Config: Verifying Hash Integrity ... ");
+	if (fit_config_verify(fit, cfg_noffset)) {
+		puts("Bad Data Hash\n");
+		return -EPERM;
+	}
+	puts("OK\n");
+#endif
 
 	/* find the node holding the images information */
 	images = fdt_path_offset(fit, FIT_IMAGES_PATH);
