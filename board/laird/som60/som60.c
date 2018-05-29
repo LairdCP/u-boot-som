@@ -19,8 +19,17 @@
 #include <asm/arch/at91_wdt.h>
 #include <asm/arch/atmel_usba_udc.h>
 #include <linux/ctype.h>
+#include <uboot_aes.h>
 
 DECLARE_GLOBAL_DATA_PTR;
+
+struct key_prop {
+	const void *cipher_key;
+	int cipher_key_len;
+	const void *cmac_key;
+	int cmac_key_len;
+	const void *iv;
+};
 
 void som60_nand_hw_init(void)
 {
@@ -56,6 +65,37 @@ static void som60_usb_hw_init(void)
     at91_udp_hw_init();
 
     usba_udc_probe(&pdata);
+}
+
+void board_fit_image_post_process(void **p_image, size_t *p_size)
+{
+	u8 *image = (u8 *)*p_image;
+	int enc_node, aes_blocks;
+	struct key_prop prop;
+	u8 key_exp[AES_EXPAND_KEY_LENGTH];
+	u8 padding;
+
+	enc_node = fdt_subnode_offset(gd->fdt_blob, 0, "encryption");
+	if (enc_node < 0) {
+		debug("No encryption node found\n");
+		return;
+	}
+
+	prop.cipher_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cipher-key", &prop.cipher_key_len);
+	prop.cmac_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cmac-key", &prop.cmac_key_len);
+	prop.iv = fdt_getprop(gd->fdt_blob, enc_node, "aes,iv", NULL);
+
+	aes_expand_key(prop.cipher_key, key_exp);
+
+	puts("   Decrypting ... ");
+	/* got to be 128bit */
+	aes_blocks = DIV_ROUND_UP(*p_size, prop.cipher_key_len);
+	aes_cbc_decrypt_blocks(key_exp, image, image, aes_blocks);
+	puts("OK\n");
+
+	/* Reduce PKCS7 padded length */
+	padding = *(image + (*p_size - 1));
+	*p_size = *p_size - padding;
 }
 
 void board_debug_uart_init(void)
