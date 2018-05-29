@@ -18,7 +18,6 @@ obj-$(CONFIG_OF_LIVE) += of_live.o
 obj-$(CONFIG_CMD_DHRYSTONE) += dhry/
 obj-$(CONFIG_ARCH_AT91) += at91/
 
-obj-$(CONFIG_AES) += aes.o
 obj-y += charset.o
 obj-$(CONFIG_USB_TTY) += circbuf.o
 obj-y += crc7.o
@@ -45,6 +44,7 @@ obj-$(CONFIG_BITREVERSE) += bitrev.o
 obj-y += list_sort.o
 endif
 
+obj-$(CONFIG_AES) += aes.o
 obj-$(CONFIG_RSA) += rsa/
 ifneq ($(CONFIG_SHA_PROG_HW_ACCEL),y)
 obj-$(CONFIG_SHA1) += sha1.o
