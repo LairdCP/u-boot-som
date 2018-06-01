@@ -896,6 +896,7 @@ int bootz_setup(ulong image, ulong *start, ulong *end);
 #define FIT_TYPE_PROP		"type"
 #define FIT_OS_PROP		"os"
 #define FIT_COMP_PROP		"compression"
+#define FIT_ENC_PROP		"encryption"
 #define FIT_ENTRY_PROP		"entry"
 #define FIT_LOAD_PROP		"load"
 
@@ -1003,6 +1004,19 @@ int fit_add_verification_data(const char *keydir, void *keydest, void *fit,
 			      const char *comment, int require_keys,
 			      const char *engine_id);
 
+/**
+ * fit_image_add_encryption_data()
+ *
+ * This adds encryption information to the FDT blob.
+ *
+ * @keydir	Directory containing *.key files
+ * @keydest	FDT Blob to write public keys into
+ * @return: 0 on success, <0 on failure
+ */
+int fit_add_encryption_data(const char *keydir, void *keydest, void *fit,
+				const char *key, const char *iv);
+
+
 int fit_image_verify(const void *fit, int noffset);
 int fit_config_verify(const void *fit, int conf_noffset);
 int fit_all_image_verify(const void *fit);
@@ -1083,6 +1097,13 @@ struct image_sign_info {
 	const char *require_keys;	/* Value for 'required' property */
 	const char *engine_id;		/* Engine to use for signing */
 };
+
+struct image_encrypt_info {
+	const char *keydir;
+	const char *cipher_key;
+	const char *cmac_key;
+	const char *iv;
+};
 #endif /* Allow struct image_region to always be defined for rsa.h */
 
 /* A part of an image, used for hashing */
@@ -1161,6 +1182,10 @@ struct crypto_algo {
 		      const struct image_region region[], int region_count,
 		      uint8_t *sig, uint sig_len);
 };
+
+
+int aes_add_encryption_data(struct image_encrypt_info *info, void *keydest);
+
 
 /**
  * image_get_checksum_algo() - Look up a checksum algorithm

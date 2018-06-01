@@ -180,6 +180,18 @@ static int fit_image_setup_sig(struct image_sign_info *info,
 	return 0;
 }
 
+static int fit_image_setup_enc(struct image_encrypt_info *info,
+		const char *keydir, const char *cipher_key, const char *iv, const char *cmac_key)
+{
+	memset(info, '\0', sizeof(*info));
+	info->keydir = keydir;
+	info->cipher_key = cipher_key;
+	info->iv = iv;
+	info->cmac_key = cmac_key;
+
+	return 0;
+}
+
 /**
  * fit_image_process_sig- Process a single subnode of the images/ node
  *
@@ -721,6 +733,48 @@ int fit_add_verification_data(const char *keydir, void *keydest, void *fit,
 	}
 
 	return 0;
+}
+
+/**
+ * fit_add_encryption_data()
+ *
+ * This adds encryption information to the FDT blob.
+ *
+ * @keydir	Directory containing *.key files
+ * @keydest	FDT Blob to write public keys into
+ * @return: 0 on success, <0 on failure
+ */
+int fit_add_encryption_data(const char *keydir, void *keydest, void *fit,
+			const char *key, const char *iv)
+{
+	struct image_encrypt_info info;
+	const char *enctype = NULL;
+	int images_noffset;
+	int ret;
+
+	if (!key)
+		return 0;
+
+	/* Find images parent node offset */
+	images_noffset = fdt_path_offset(fit, FIT_IMAGES_PATH);
+	if (images_noffset < 0) {
+		printf("Can't find images parent node '%s' (%s)\n",
+		       FIT_IMAGES_PATH, fdt_strerror(images_noffset));
+		return images_noffset;
+	}
+
+	enctype = fdt_getprop(fit, images_noffset, FIT_ENC_PROP, NULL);
+	if (!enctype)
+		return 0;
+
+	if (fit_image_setup_enc(&info, keydir,
+				key,
+			    iv,
+				NULL))
+		return -1;
+
+	ret = aes_add_encryption_data(&info, keydest);
+	return ret;
 }
 
 #ifdef CONFIG_FIT_SIGNATURE
