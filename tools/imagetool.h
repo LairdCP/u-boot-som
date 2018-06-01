@@ -63,7 +63,7 @@ struct image_tool_params {
 	char *cmdname;
 	const char *outfile;	/* Output filename */
 	const char *keydir;	/* Directory holding private keys */
-	const char *keydest;	/* Destination .dtb for public key */
+	const char *keydest;	/* Destination .dtb for public key or encryption keys */
 	const char *comment;	/* Comment to add to signature node */
 	int require_keys;	/* 1 to mark signing keys as 'required' */
 	int file_size;		/* Total size of output file */
@@ -77,6 +77,8 @@ struct image_tool_params {
 	bool quiet;		/* Don't output text in normal operation */
 	unsigned int external_offset;	/* Add padding to external data */
 	const char *engine_id;	/* Engine to use for signing */
+	const char *enckey;	/* Encryption key */
+	const char *enciv;	/* Encryption IV */
 };
 
 /*
