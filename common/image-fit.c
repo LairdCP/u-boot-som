@@ -1007,7 +1007,6 @@ int calculate_hash(const void *data, int data_len, const char *algo,
 	if (IMAGE_ENABLE_CRC32 && strcmp(algo, "crc32") == 0) {
 		hash_algo->hash_func_ws(data, data_len,
 				(unsigned char *)value, hash_algo->chunk_size);
-		*((uint32_t *)value) = cpu_to_uimage(*((uint32_t *)value));
 		*value_len = hash_algo->digest_size;
 	} else if (IMAGE_ENABLE_SHA1 && strcmp(algo, "sha1") == 0) {
 		hash_algo->hash_func_ws((unsigned char *)data, data_len,
