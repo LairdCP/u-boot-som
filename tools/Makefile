@@ -73,6 +73,8 @@ LIBFDT_OBJS := $(addprefix libfdt/, $(patsubst %.c, %.o, $(LIBFDT_SRCS_SYNCED)))
 RSA_OBJS-$(CONFIG_FIT_SIGNATURE) := $(addprefix lib/rsa/, \
 					rsa-sign.o rsa-verify.o rsa-checksum.o \
 					rsa-mod-exp.o)
+AES_OBJS-y := $(addprefix lib/aes/, \
+					aes-encrypt.o)
 
 ROCKCHIP_OBS = lib/rc4.o rkcommon.o rkimage.o rksd.o rkspi.o
 
@@ -112,7 +114,8 @@ dumpimage-mkimage-objs := aisimage.o \
 			$(LIBFDT_OBJS) \
 			gpimage.o \
 			gpimage-common.o \
-			$(RSA_OBJS-y)
+			$(RSA_OBJS-y) \
+			$(AES_OBJS-y)
 
 dumpimage-objs := $(dumpimage-mkimage-objs) dumpimage.o
 mkimage-objs   := $(dumpimage-mkimage-objs) mkimage.o

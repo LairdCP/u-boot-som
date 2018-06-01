@@ -63,6 +63,12 @@ static int fit_add_file_data(struct image_tool_params *params, size_t size_inc,
 						params->engine_id);
 	}
 
+	if (!ret) {
+		ret = fit_add_encryption_data(params->keydir, dest_blob, ptr,
+						params->enckey,
+						params->enciv);
+	}
+
 	if (dest_blob) {
 		munmap(dest_blob, destfd_size);
 		close(destfd);
