@@ -601,13 +601,16 @@ void aes_apply_cbc_chain_data(u8 *cbc_chain_data, u8 *src, u8 *dst)
 		*dst++ = *src++ ^ *cbc_chain_data++;
 }
 
-void aes_cbc_encrypt_blocks(u8 *key_exp, u8 *src, u8 *dst, u32 num_aes_blocks)
+void aes_cbc_encrypt_blocks(u8 *key_exp, u8 *iv, u8 *src, u8 *dst, u32 num_aes_blocks)
 {
-	u8 zero_key[AES_KEY_LENGTH] = { 0 };
+	u8 cbc_chain_iv[AES_KEY_LENGTH] = { 0 };
 	u8 tmp_data[AES_KEY_LENGTH];
-	/* Convenient array of 0's for IV */
-	u8 *cbc_chain_data = zero_key;
+	u8 *cbc_chain_data = cbc_chain_iv;
 	u32 i;
+
+
+	if (iv)
+		memcpy(cbc_chain_iv, iv, AES_KEY_LENGTH);
 
 	for (i = 0; i < num_aes_blocks; i++) {
 		debug("encrypt_object: block %d of %d\n", i, num_aes_blocks);
@@ -628,12 +631,14 @@ void aes_cbc_encrypt_blocks(u8 *key_exp, u8 *src, u8 *dst, u32 num_aes_blocks)
 	}
 }
 
-void aes_cbc_decrypt_blocks(u8 *key_exp, u8 *src, u8 *dst, u32 num_aes_blocks)
+void aes_cbc_decrypt_blocks(u8 *key_exp, u8 *iv, u8 *src, u8 *dst, u32 num_aes_blocks)
 {
 	u8 tmp_data[AES_KEY_LENGTH], tmp_block[AES_KEY_LENGTH];
-	/* Convenient array of 0's for IV */
 	u8 cbc_chain_data[AES_KEY_LENGTH] = { 0 };
 	u32 i;
+
+	if (iv)
+		memcpy(cbc_chain_data, iv, AES_KEY_LENGTH);
 
 	for (i = 0; i < num_aes_blocks; i++) {
 		debug("encrypt_object: block %d of %d\n", i, num_aes_blocks);

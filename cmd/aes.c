@@ -60,9 +60,9 @@ static int do_aes(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
 	aes_blocks = DIV_ROUND_UP(len, AES_KEY_LENGTH);
 
 	if (enc)
-		aes_cbc_encrypt_blocks(key_exp, src_ptr, dst_ptr, aes_blocks);
+		aes_cbc_encrypt_blocks(key_exp, NULL, src_ptr, dst_ptr, aes_blocks);
 	else
-		aes_cbc_decrypt_blocks(key_exp, src_ptr, dst_ptr, aes_blocks);
+		aes_cbc_decrypt_blocks(key_exp, NULL, src_ptr, dst_ptr, aes_blocks);
 
 	return 0;
 }
