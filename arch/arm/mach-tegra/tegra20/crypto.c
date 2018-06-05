@@ -61,7 +61,7 @@ static void sign_object(u8 *key, u8 *key_schedule, u8 *src, u8 *dst,
 	for (i = 0; i < AES_KEY_LENGTH; i++)
 		tmp_data[i] = 0;
 
-	aes_cbc_encrypt_blocks(key_schedule, tmp_data, left, 1);
+	aes_cbc_encrypt_blocks(key_schedule, NULL, tmp_data, left, 1);
 
 	left_shift_vector(left, k1, sizeof(left));
 
@@ -116,7 +116,7 @@ static int encrypt_and_sign(u8 *key, enum security_op oper, u8 *src,
 	if (oper & SECURITY_ENCRYPT) {
 		/* Perform this in place, resulting in src being encrypted. */
 		debug("encrypt_and_sign: begin encryption\n");
-		aes_cbc_encrypt_blocks(key_schedule, src, src, num_aes_blocks);
+		aes_cbc_encrypt_blocks(key_schedule, NULL, src, src, num_aes_blocks);
 		debug("encrypt_and_sign: end encryption\n");
 	}
 

@@ -85,12 +85,12 @@ void board_fit_image_post_process(void **p_image, size_t *p_size)
 	prop.cmac_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cmac-key", &prop.cmac_key_len);
 	prop.iv = fdt_getprop(gd->fdt_blob, enc_node, "aes,iv", NULL);
 
-	aes_expand_key(prop.cipher_key, key_exp);
+	aes_expand_key((u8 *)prop.cipher_key, key_exp);
 
 	puts("   Decrypting ... ");
 	/* got to be 128bit */
 	aes_blocks = DIV_ROUND_UP(*p_size, prop.cipher_key_len);
-	aes_cbc_decrypt_blocks(key_exp, image, image, aes_blocks);
+	aes_cbc_decrypt_blocks(key_exp, (u8 *)prop.iv, image, image, aes_blocks);
 	puts("OK\n");
 
 	/* Reduce PKCS7 padded length */
