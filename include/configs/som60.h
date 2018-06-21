@@ -7,7 +7,7 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
-#define CONFIG_SYS_TEXT_BASE		0x23f00000
+#define CONFIG_SYS_TEXT_BASE		0x26f00000
 
 /* ARM asynchronous clock */
 #define CONFIG_SYS_AT91_SLOW_CLOCK      32768
@@ -61,7 +61,7 @@
 #define CONFIG_AUTO_COMPLETE
 
 /* Size of malloc() pool */
-#define CONFIG_SYS_MALLOC_LEN		(40 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		(8 * 1024 * 1024)
 
 /* SDRAM */
 #define CONFIG_NR_DRAM_BANKS		1
