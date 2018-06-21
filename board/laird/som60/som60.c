@@ -23,6 +23,9 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#define FS_MAX_KEY_SIZE	64
+#define FS_KEY_WINDOW	0x31e000
+
 struct key_prop {
 	const void *cipher_key;
 	int cipher_key_len;
@@ -98,6 +101,35 @@ void board_fit_image_post_process(void **p_image, size_t *p_size)
 	*p_size = *p_size - padding;
 }
 
+void som60_fs_key_inject(void)
+{
+	u8	*key = (u8 *)FS_KEY_WINDOW;
+	const void *fs_key;
+	int fs_key_len;
+	int enc_node;
+
+	enc_node = fdt_subnode_offset(gd->fdt_blob, 0, "encryption");
+	if (enc_node < 0) {
+		debug("No encryption node found\n");
+		return;
+	}
+
+	fs_key = fdt_getprop(gd->fdt_blob, enc_node, "laird,fs-key", &fs_key_len);
+	if (!fs_key) {
+		debug("No fs-key property found\n");
+		return;
+	}
+
+	if (fs_key_len != FS_MAX_KEY_SIZE) {
+		debug("Key must be max size\n");
+		return;
+	}
+
+	memcpy(key, fs_key, fs_key_len);
+
+	return;
+}
+
 void board_debug_uart_init(void)
 {
 	at91_seriald_hw_init();
@@ -131,6 +163,8 @@ int board_init(void)
 
 	som60_nand_hw_init();
 	som60_usb_hw_init();
+
+	som60_fs_key_inject();
 
 	return 0;
 }
