@@ -16,12 +16,43 @@
 #include <openssl/ssl.h>
 #include <openssl/evp.h>
 #include <openssl/engine.h>
+#include <openssl/bio.h>
 
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
 #define HAVE_ERR_REMOVE_THREAD_STATE
 #endif
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
+/**
+ * convert_line_feeds() - helper function to convert '\n' to LF within a character string
+ *
+ * @in		The string of characters to convert
+ * @out		Returns the converted string of characters
+ * return	The final size of the converted string
+ */
+static size_t convert_line_feeds(const char *in, char *out)
+{
+	char c;
+	size_t inLen = strlen(in);
+	size_t cnt = 0;
+
+	for (int i = 0; i < inLen; i++) {
+		c = in[i];
+		if (c == '\\' && in[i+1] == 'n') {
+			out[cnt] = '\n';
+			i++;
+		} else {
+			out[cnt] = c;
+		}
+
+		cnt++;
+	}
+
+	out[cnt] = '\0';
+
+	return cnt;
+}
+
 static void RSA_get0_key(const RSA *r,
                  const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
 {
@@ -49,34 +80,58 @@ static int rsa_err(const char *msg)
  * rsa_pem_get_pub_key() - read a public key from a .crt file
  *
  * @keydir:	Directory containins the key
+ * @signcert	The certificate (only used if keydir is NULL)
  * @name	Name of key file (will have a .crt extension)
  * @rsap	Returns RSA object, or NULL on failure
  * @return 0 if ok, -ve on error (in which case *rsap will be set to NULL)
  */
-static int rsa_pem_get_pub_key(const char *keydir, const char *name, RSA **rsap)
+static int rsa_pem_get_pub_key(const char *keydir, const char *signcert, 
+				const char *name, RSA **rsap)
 {
-	char path[1024];
 	EVP_PKEY *key;
 	X509 *cert;
 	RSA *rsa;
-	FILE *f;
 	int ret;
 
 	*rsap = NULL;
-	snprintf(path, sizeof(path), "%s/%s.crt", keydir, name);
-	f = fopen(path, "r");
-	if (!f) {
-		fprintf(stderr, "Couldn't open RSA certificate: '%s': %s\n",
-			path, strerror(errno));
-		return -EACCES;
-	}
-
-	/* Read the certificate */
 	cert = NULL;
-	if (!PEM_read_X509(f, &cert, NULL, NULL)) {
-		rsa_err("Couldn't read certificate");
-		ret = -EINVAL;
-		goto err_cert;
+	if (keydir) {
+		char path[1024];
+		FILE *f;
+
+		snprintf(path, sizeof(path), "%s/%s.crt", keydir, name);
+		f = fopen(path, "r");
+		if (!f) {
+			fprintf(stderr, "Couldn't open RSA certificate: '%s': %s\n",
+				path, strerror(errno));
+			return -EACCES;
+		}
+
+		/* Read the certificate */
+		if (!PEM_read_X509(f, &cert, NULL, NULL)) {
+			rsa_err("Couldn't read certificate");
+			ret = -EINVAL;
+			fclose(f);
+			goto err_cert;
+		}
+
+		fclose(f);
+	} else {
+		char signcertConverted[strlen(signcert)];
+		size_t certLen = convert_line_feeds(signcert, signcertConverted);
+		
+		BIO *certBio = BIO_new(BIO_s_mem());
+		BIO_write(certBio, signcertConverted, certLen);
+		
+		/* Read the certificate */
+		if (!PEM_read_bio_X509(certBio, &cert, NULL, NULL)) {
+			rsa_err("Couldn't parse certificate");
+			ret = -EINVAL;
+			BIO_free(certBio);
+			goto err_cert;
+		}
+
+		BIO_free(certBio);
 	}
 
 	/* Get the public key from the certificate. */
@@ -90,11 +145,11 @@ static int rsa_pem_get_pub_key(const char *keydir, const char *name, RSA **rsap)
 	/* Convert to a RSA_style key. */
 	rsa = EVP_PKEY_get1_RSA(key);
 	if (!rsa) {
+		fprintf(stderr, "RSA error");
 		rsa_err("Couldn't convert to a RSA style key");
 		ret = -EINVAL;
 		goto err_rsa;
 	}
-	fclose(f);
 	EVP_PKEY_free(key);
 	X509_free(cert);
 	*rsap = rsa;
@@ -106,7 +161,6 @@ err_rsa:
 err_pubkey:
 	X509_free(cert);
 err_cert:
-	fclose(f);
 	return ret;
 }
 
@@ -177,45 +231,57 @@ err_rsa:
  * @rsap	Returns RSA object, or NULL on failure
  * @return 0 if ok, -ve on error (in which case *rsap will be set to NULL)
  */
-static int rsa_get_pub_key(const char *keydir, const char *name,
-			   ENGINE *engine, RSA **rsap)
+static int rsa_get_pub_key(const char *keydir, const char *signcert, 
+			   const char *name, ENGINE *engine, RSA **rsap)
 {
 	if (engine)
 		return rsa_engine_get_pub_key(keydir, name, engine, rsap);
-	return rsa_pem_get_pub_key(keydir, name, rsap);
+	return rsa_pem_get_pub_key(keydir, signcert, name, rsap);
 }
 
 /**
  * rsa_pem_get_priv_key() - read a private key from a .key file
  *
  * @keydir:	Directory containing the key
+ * @signkey	The key (only used if the keydir is NULL)
  * @name	Name of key file (will have a .key extension)
  * @rsap	Returns RSA object, or NULL on failure
  * @return 0 if ok, -ve on error (in which case *rsap will be set to NULL)
  */
-static int rsa_pem_get_priv_key(const char *keydir, const char *name,
-				RSA **rsap)
+static int rsa_pem_get_priv_key(const char *keydir, const char *signkey, 
+				const char *name, RSA **rsap)
 {
-	char path[1024];
 	RSA *rsa;
-	FILE *f;
-
 	*rsap = NULL;
-	snprintf(path, sizeof(path), "%s/%s.key", keydir, name);
-	f = fopen(path, "r");
-	if (!f) {
-		fprintf(stderr, "Couldn't open RSA private key: '%s': %s\n",
-			path, strerror(errno));
-		return -ENOENT;
+
+	if (keydir) {
+		char path[1024];
+		FILE *f;
+
+		snprintf(path, sizeof(path), "%s/%s.key", keydir, name);
+		f = fopen(path, "r");
+		if (!f) {
+			fprintf(stderr, "Couldn't open RSA private key: '%s': %s\n",
+				path, strerror(errno));
+			return -ENOENT;
+		}
+
+		rsa = PEM_read_RSAPrivateKey(f, 0, NULL, path);
+		fclose(f);
+	} else {
+		char signkeyConverted[strlen(signkey)];
+		size_t keyLen = convert_line_feeds(signkey, signkeyConverted);
+
+		BIO* keyBio = BIO_new(BIO_s_mem());
+		BIO_write(keyBio, signkeyConverted, keyLen);
+		rsa = PEM_read_bio_RSAPrivateKey(keyBio, NULL, NULL, NULL);
+		BIO_free(keyBio);
 	}
 
-	rsa = PEM_read_RSAPrivateKey(f, 0, NULL, path);
 	if (!rsa) {
 		rsa_err("Failure reading private key");
-		fclose(f);
 		return -EPROTO;
 	}
-	fclose(f);
 	*rsap = rsa;
 
 	return 0;
@@ -288,12 +354,12 @@ err_rsa:
  * @rsap	Returns RSA object, or NULL on failure
  * @return 0 if ok, -ve on error (in which case *rsap will be set to NULL)
  */
-static int rsa_get_priv_key(const char *keydir, const char *name,
+static int rsa_get_priv_key(const char *keydir, const char *signkey, const char *name,
 			    ENGINE *engine, RSA **rsap)
 {
 	if (engine)
 		return rsa_engine_get_priv_key(keydir, name, engine, rsap);
-	return rsa_pem_get_priv_key(keydir, name, rsap);
+	return rsa_pem_get_priv_key(keydir, signkey, name, rsap);
 }
 
 static int rsa_init(void)
@@ -475,7 +541,7 @@ int rsa_sign(struct image_sign_info *info,
 			goto err_engine;
 	}
 
-	ret = rsa_get_priv_key(info->keydir, info->keyname, e, &rsa);
+	ret = rsa_get_priv_key(info->keydir, info->signkey, info->keyname, e, &rsa);
 	if (ret)
 		goto err_priv;
 	ret = rsa_sign_with_key(rsa, info->checksum, region,
@@ -697,7 +763,7 @@ int rsa_add_verify_data(struct image_sign_info *info, void *keydest)
 		if (ret)
 			return ret;
 	}
-	ret = rsa_get_pub_key(info->keydir, info->keyname, e, &rsa);
+	ret = rsa_get_pub_key(info->keydir, info->signcert, info->keyname, e, &rsa);
 	if (ret)
 		goto err_get_pub_key;
 	ret = rsa_get_params(rsa, &exponent, &n0_inv, &modulus, &r_squared);

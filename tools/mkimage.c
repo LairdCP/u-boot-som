@@ -107,6 +107,8 @@ static void usage(const char *msg)
 		"          -p => place external data at a static position\n"
 		"          -r => mark keys used as 'required' in dtb\n"
 		"          -N => engine to use for signing (pkcs11)\n"
+		"          -y => base64 encoded signing key\n"
+		"          -Y => base64 encoded signing certificate\n"
 		"          -z => Add encryption IV to DTB\n"
 		"          -Z => Add encryption key to DTB\n");
 #else
@@ -146,7 +148,7 @@ static void process_args(int argc, char **argv)
 	int opt;
 
 	while ((opt = getopt(argc, argv,
-			     "a:A:b:c:C:d:D:e:Ef:Fk:i:K:ln:N:p:O:rR:qsT:vVx:z:Z:")) != -1) {
+			     "a:A:b:c:C:d:D:e:Ef:Fk:i:K:ln:N:p:O:rR:qsT:vVx:y:Y:z:Z:")) != -1) {
 		switch (opt) {
 		case 'a':
 			params.addr = strtoull(optarg, &ptr, 16);
@@ -280,6 +282,12 @@ static void process_args(int argc, char **argv)
 			exit(EXIT_SUCCESS);
 		case 'x':
 			params.xflag++;
+			break;
+		case 'y':
+			params.signkey = optarg;
+			break;
+		case 'Y':
+			params.signcert = optarg;
 			break;
 		case 'z':
 			params.enciv = optarg;
