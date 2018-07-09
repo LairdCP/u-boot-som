@@ -211,6 +211,8 @@ static int fit_image_setup_enc(struct image_encrypt_info *info,
  * @comment:	Comment to add to signature nodes
  * @require_keys: Mark all keys as 'required'
  * @engine_id:	Engine to use for signing
+ * @signkey:	Signing key (only used if keydir is NULL)
+ * @signcert:	Signing certificate (only used if keydir is NULL)
  * @return 0 if ok, -1 on error
  */
 static int fit_image_process_sig(const char *keydir, void *keydest,
@@ -225,8 +227,6 @@ static int fit_image_process_sig(const char *keydir, void *keydest,
 	uint8_t *value;
 	uint value_len;
 	int ret;
-
-	fprintf(stderr, "In fit_image_process_sig\n");
 
 	if (fit_image_setup_sig(&info, keydir, fit, image_name, noffset,
 				require_keys ? "image" : NULL, engine_id,
@@ -311,6 +311,8 @@ static int fit_image_process_sig(const char *keydir, void *keydest,
  * @comment:	Comment to add to signature nodes
  * @require_keys: Mark all keys as 'required'
  * @engine_id:	Engine to use for signing
+ * @signkey:	Signing key (only used if keydir is NULL)
+ * @signcert:	Signing certificate (only used if keydir is NULL)
  * @return: 0 on success, <0 on failure
  */
 int fit_image_add_verification_data(const char *keydir, void *keydest,
