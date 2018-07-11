@@ -119,10 +119,10 @@ static int rsa_pem_get_pub_key(const char *keydir, const char *signcert,
 	} else {
 		char signcertConverted[strlen(signcert)];
 		size_t certLen = convert_line_feeds(signcert, signcertConverted);
-		
+
 		BIO *certBio = BIO_new(BIO_s_mem());
 		BIO_write(certBio, signcertConverted, certLen);
-		
+
 		/* Read the certificate */
 		if (!PEM_read_bio_X509(certBio, &cert, NULL, NULL)) {
 			rsa_err("Couldn't parse certificate");
@@ -145,7 +145,6 @@ static int rsa_pem_get_pub_key(const char *keydir, const char *signcert,
 	/* Convert to a RSA_style key. */
 	rsa = EVP_PKEY_get1_RSA(key);
 	if (!rsa) {
-		fprintf(stderr, "RSA error");
 		rsa_err("Couldn't convert to a RSA style key");
 		ret = -EINVAL;
 		goto err_rsa;
@@ -226,6 +225,7 @@ err_rsa:
  * rsa_get_pub_key() - read a public key
  *
  * @keydir:	Directory containing the key (PEM file) or key prefix (engine)
+ * @signcert:	Signing certificate (only used if keydir is NULL)
  * @name	Name of key file (will have a .crt extension)
  * @engine	Engine to use
  * @rsap	Returns RSA object, or NULL on failure
@@ -349,6 +349,7 @@ err_rsa:
  * rsa_get_priv_key() - read a private key
  *
  * @keydir:	Directory containing the key (PEM file) or key prefix (engine)
+ * @signkey:	Signing key (only used if keydir is NULL)
  * @name	Name of key
  * @engine	Engine to use for signing
  * @rsap	Returns RSA object, or NULL on failure

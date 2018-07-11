@@ -989,6 +989,8 @@ int fit_set_timestamp(void *fit, int noffset, time_t timestamp);
  * @comment:	Comment to add to signature nodes
  * @require_keys: Mark all keys as 'required'
  * @engine_id:	Engine to use for signing
+ * @signkey:	Signing key (only used if keydir is NULL)
+ * @signcert:	Signing certificate (only used if keydir is NULL)
  *
  * Adds hash values for all component images in the FIT blob.
  * Hashes are calculated for all component images which have hash subnodes
