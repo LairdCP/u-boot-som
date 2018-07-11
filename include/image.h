@@ -1002,7 +1002,8 @@ int fit_set_timestamp(void *fit, int noffset, time_t timestamp);
  */
 int fit_add_verification_data(const char *keydir, void *keydest, void *fit,
 			      const char *comment, int require_keys,
-			      const char *engine_id);
+			      const char *engine_id, const char *signkey,
+			      const char *signcert);
 
 /**
  * fit_image_add_encryption_data()
@@ -1096,6 +1097,8 @@ struct image_sign_info {
 	int required_keynode;		/* Node offset of key to use: -1=any */
 	const char *require_keys;	/* Value for 'required' property */
 	const char *engine_id;		/* Engine to use for signing */
+	const char *signkey;		/* Signing key */
+	const char *signcert;		/* Signing certificate */
 };
 
 struct image_encrypt_info {

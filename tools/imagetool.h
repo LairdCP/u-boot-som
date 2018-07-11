@@ -79,6 +79,8 @@ struct image_tool_params {
 	const char *engine_id;	/* Engine to use for signing */
 	const char *enckey;	/* Encryption key */
 	const char *enciv;	/* Encryption IV */
+	const char *signkey;	/* Signing key */
+	const char *signcert;	/* Signing certificate */ 
 };
 
 /*

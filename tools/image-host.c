@@ -149,7 +149,8 @@ static int fit_image_write_sig(void *fit, int noffset, uint8_t *value,
 
 static int fit_image_setup_sig(struct image_sign_info *info,
 		const char *keydir, void *fit, const char *image_name,
-		int noffset, const char *require_keys, const char *engine_id)
+		int noffset, const char *require_keys, const char *engine_id,
+		const char *signkey, const char *signcert)
 {
 	const char *node_name;
 	char *algo_name;
@@ -171,6 +172,8 @@ static int fit_image_setup_sig(struct image_sign_info *info,
 	info->crypto = image_get_crypto_algo(algo_name);
 	info->require_keys = require_keys;
 	info->engine_id = engine_id;
+	info->signkey = signkey;
+	info->signcert = signcert;
 	if (!info->checksum || !info->crypto) {
 		printf("Unsupported signature algorithm (%s) for '%s' signature node in '%s' image node\n",
 		       algo_name, node_name, image_name);
@@ -213,7 +216,8 @@ static int fit_image_setup_enc(struct image_encrypt_info *info,
 static int fit_image_process_sig(const char *keydir, void *keydest,
 		void *fit, const char *image_name,
 		int noffset, const void *data, size_t size,
-		const char *comment, int require_keys, const char *engine_id)
+		const char *comment, int require_keys, const char *engine_id,
+		const char *signkey, const char *signcert)
 {
 	struct image_sign_info info;
 	struct image_region region;
@@ -222,8 +226,11 @@ static int fit_image_process_sig(const char *keydir, void *keydest,
 	uint value_len;
 	int ret;
 
+	fprintf(stderr, "In fit_image_process_sig\n");
+
 	if (fit_image_setup_sig(&info, keydir, fit, image_name, noffset,
-				require_keys ? "image" : NULL, engine_id))
+				require_keys ? "image" : NULL, engine_id,
+				signkey, signcert))
 		return -1;
 
 	node_name = fit_get_name(fit, noffset, NULL);
@@ -308,7 +315,8 @@ static int fit_image_process_sig(const char *keydir, void *keydest,
  */
 int fit_image_add_verification_data(const char *keydir, void *keydest,
 		void *fit, int image_noffset, const char *comment,
-		int require_keys, const char *engine_id)
+		int require_keys, const char *engine_id, const char *signkey,
+		const char *signcert)
 {
 	const char *image_name;
 	const void *data;
@@ -340,12 +348,15 @@ int fit_image_add_verification_data(const char *keydir, void *keydest,
 			     strlen(FIT_HASH_NODENAME))) {
 			ret = fit_image_process_hash(fit, image_name, noffset,
 						data, size);
-		} else if (IMAGE_ENABLE_SIGN && keydir &&
+		} else if (IMAGE_ENABLE_SIGN && 
+			   (keydir || (signkey && signcert)) &&
 			   !strncmp(node_name, FIT_SIG_NODENAME,
 				strlen(FIT_SIG_NODENAME))) {
+
 			ret = fit_image_process_sig(keydir, keydest,
 				fit, image_name, noffset, data, size,
-				comment, require_keys, engine_id);
+				comment, require_keys, engine_id,
+				signkey, signcert);
 		}
 		if (ret)
 			return ret;
@@ -586,7 +597,7 @@ static int fit_config_get_data(void *fit, int conf_noffset, int noffset,
 static int fit_config_process_sig(const char *keydir, void *keydest,
 		void *fit, const char *conf_name, int conf_noffset,
 		int noffset, const char *comment, int require_keys,
-		const char *engine_id)
+		const char *engine_id, const char *signkey, const char *signcert)
 {
 	struct image_sign_info info;
 	const char *node_name;
@@ -604,7 +615,8 @@ static int fit_config_process_sig(const char *keydir, void *keydest,
 		return -1;
 
 	if (fit_image_setup_sig(&info, keydir, fit, conf_name, noffset,
-				require_keys ? "conf" : NULL, engine_id))
+				require_keys ? "conf" : NULL, engine_id,
+				signkey, signcert))
 		return -1;
 
 	ret = info.crypto->sign(&info, region, region_count, &value,
@@ -650,7 +662,8 @@ static int fit_config_process_sig(const char *keydir, void *keydest,
 
 static int fit_config_add_verification_data(const char *keydir, void *keydest,
 		void *fit, int conf_noffset, const char *comment,
-		int require_keys, const char *engine_id)
+		int require_keys, const char *engine_id, const char *signkey,
+		const char *signcert)
 {
 	const char *conf_name;
 	int noffset;
@@ -669,7 +682,7 @@ static int fit_config_add_verification_data(const char *keydir, void *keydest,
 			     strlen(FIT_SIG_NODENAME))) {
 			ret = fit_config_process_sig(keydir, keydest,
 				fit, conf_name, conf_noffset, noffset, comment,
-				require_keys, engine_id);
+				require_keys, engine_id, signkey, signcert);
 		}
 		if (ret)
 			return ret;
@@ -680,7 +693,8 @@ static int fit_config_add_verification_data(const char *keydir, void *keydest,
 
 int fit_add_verification_data(const char *keydir, void *keydest, void *fit,
 			      const char *comment, int require_keys,
-			      const char *engine_id)
+			      const char *engine_id, const char *signkey,
+			      const char *signcert)
 {
 	int images_noffset, confs_noffset;
 	int noffset;
@@ -703,13 +717,14 @@ int fit_add_verification_data(const char *keydir, void *keydest, void *fit,
 		 * i.e. component image node.
 		 */
 		ret = fit_image_add_verification_data(keydir, keydest,
-				fit, noffset, comment, require_keys, engine_id);
+				fit, noffset, comment, require_keys, engine_id,
+				signkey, signcert);
 		if (ret)
 			return ret;
 	}
 
 	/* If there are no keys, we can't sign configurations */
-	if (!IMAGE_ENABLE_SIGN || !keydir)
+	if (!IMAGE_ENABLE_SIGN || (!keydir && (!signkey || !signcert)))
 		return 0;
 
 	/* Find configurations parent node offset */
@@ -727,7 +742,8 @@ int fit_add_verification_data(const char *keydir, void *keydest, void *fit,
 		ret = fit_config_add_verification_data(keydir, keydest,
 						       fit, noffset, comment,
 						       require_keys,
-						       engine_id);
+						       engine_id,
+						       signkey, signcert);
 		if (ret)
 			return ret;
 	}
