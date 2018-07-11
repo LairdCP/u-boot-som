@@ -28,24 +28,27 @@
  *
  * @in		The string of characters to convert
  * @out		Returns the converted string of characters
+ * @max_out	Max length of the out buffer 
  * return	The final size of the converted string
  */
-static size_t convert_line_feeds(const char *in, char *out)
+static size_t convert_line_feeds(const char *in, char *out, size_t max_out)
 {
 	char c;
 	size_t inLen = strlen(in);
 	size_t cnt = 0;
 
-	for (int i = 0; i < inLen; i++) {
-		c = in[i];
-		if (c == '\\' && in[i+1] == 'n') {
-			out[cnt] = '\n';
-			i++;
-		} else {
-			out[cnt] = c;
-		}
+	if (inLen <= max_out) {
+		for (int i = 0; i < inLen; i++) {
+			c = in[i];
+			if (c == '\\' && in[i+1] == 'n') {
+				out[cnt] = '\n';
+				i++;
+			} else {
+				out[cnt] = c;
+			}
 
-		cnt++;
+			cnt++;
+		}
 	}
 
 	out[cnt] = '\0';
@@ -117,8 +120,8 @@ static int rsa_pem_get_pub_key(const char *keydir, const char *signcert,
 
 		fclose(f);
 	} else {
-		char signcertConverted[strlen(signcert)];
-		size_t certLen = convert_line_feeds(signcert, signcertConverted);
+		char signcertConverted[strlen(signcert)+1];
+		size_t certLen = convert_line_feeds(signcert, signcertConverted, sizeof(signcertConverted));
 
 		BIO *certBio = BIO_new(BIO_s_mem());
 		BIO_write(certBio, signcertConverted, certLen);
@@ -269,8 +272,8 @@ static int rsa_pem_get_priv_key(const char *keydir, const char *signkey,
 		rsa = PEM_read_RSAPrivateKey(f, 0, NULL, path);
 		fclose(f);
 	} else {
-		char signkeyConverted[strlen(signkey)];
-		size_t keyLen = convert_line_feeds(signkey, signkeyConverted);
+		char signkeyConverted[strlen(signkey)+1];
+		size_t keyLen = convert_line_feeds(signkey, signkeyConverted, sizeof(signkeyConverted));
 
 		BIO* keyBio = BIO_new(BIO_s_mem());
 		BIO_write(keyBio, signkeyConverted, keyLen);
