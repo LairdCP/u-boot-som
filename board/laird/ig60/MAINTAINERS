@@ -1,0 +1,6 @@
+IG60 MODULE
+M:	Ben Whitten <ben.whitten@lairdtech.com>
+S:	Maintained
+F:	board/laird/ig60/
+F:	include/configs/ig60.h
+F:	configs/ig60_defconfig

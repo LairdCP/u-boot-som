@@ -1,0 +1,12 @@
+if TARGET_IG60
+
+config SYS_BOARD
+	default "ig60"
+
+config SYS_VENDOR
+	default "laird"
+
+config SYS_CONFIG_NAME
+	default "ig60"
+
+endif
