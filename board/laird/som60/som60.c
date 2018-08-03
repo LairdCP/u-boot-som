@@ -20,6 +20,7 @@
 #include <asm/arch/atmel_usba_udc.h>
 #include <linux/ctype.h>
 #include <uboot_aes.h>
+#include <asm/arch/at91_sck.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -33,6 +34,30 @@ struct key_prop {
 	int cmac_key_len;
 	const void *iv;
 };
+
+static void at91sama5d3_slowclock_init(void)
+{
+	/*
+	 * On AT91SAMA5D3 CPUs, the slow clock can be based on an
+	 * internal imprecise RC oscillator or an external 32 kHz oscillator.
+	 * Switch to the latter.
+	 */
+	unsigned tmp;
+	ulong *reg = (ulong *)ATMEL_BASE_SCKCR;
+
+	tmp = readl(reg);
+	if ((tmp & AT91SAM9G45_SCKCR_OSCSEL) == AT91SAM9G45_SCKCR_OSCSEL_RC) {
+		tmp &= ~AT91SAM9G45_SCKCR_OSC32EN;
+		tmp |= AT91SAM9G45_SCKCR_OSC32BYP;
+		writel(tmp, reg);
+		udelay(200);
+		tmp |= AT91SAM9G45_SCKCR_OSCSEL_32;
+		writel(tmp, reg);
+		udelay(200);
+		tmp &= ~AT91SAM9G45_SCKCR_RCEN;
+		writel(tmp, reg);
+	}
+}
 
 void som60_nand_hw_init(void)
 {
@@ -151,6 +176,8 @@ int board_late_init(void)
 
 int board_early_init_f(void)
 {
+	at91sama5d3_slowclock_init();
+
 	debug_uart_init();
 
     return 0;
