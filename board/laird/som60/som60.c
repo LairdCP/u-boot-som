@@ -176,8 +176,6 @@ int board_late_init(void)
 
 int board_early_init_f(void)
 {
-	at91sama5d3_slowclock_init();
-
 	debug_uart_init();
 
     return 0;
@@ -187,6 +185,8 @@ int board_init(void)
 {
 	/* adress of boot parameters */
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
+
+	at91sama5d3_slowclock_init();
 
 	som60_nand_hw_init();
 	som60_usb_hw_init();
