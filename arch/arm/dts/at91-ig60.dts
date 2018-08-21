@@ -6,18 +6,14 @@
  *
  * Licensed under GPLv2 or later.
  */
+
 /dts-v1/;
-#include "at91-ig60.dtsi"
+
+#include "at91-som60.dtsi"
 
 / {
 	model = "Laird IG60";
 	compatible = "laird,ig60", "laird,som60", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
-
-	chosen {
-		u-boot,dm-pre-reloc;
-		stdout-path = &dbgu;
-		tick-timer = &pit;
-	};
 
 	signature {
 		key-dev {
@@ -26,57 +22,143 @@
 			key-name-hint = "dev";
 		};
 	};
+
+	memory {
+		reg = <0x20000000 0x10000000>;
+	};
+
+	reg_mmc0_en: reg_mmc0_en_grp {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_mmc0_en>;
+
+		compatible = "regulator-fixed";
+		regulator-name = "VDD MMC0";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+
+		gpio = <&pioE 30 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	reg_usb_vbus: reg_usb_vbus_grp {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usb_vbus>;
+
+		compatible = "regulator-fixed";
+		regulator-name = "VDD USB";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+
+		gpio = <&pioE 20 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	ahb {
+		apb {
+			pinctrl@fffff200 {
+				board {
+					u-boot,dm-pre-reloc;
+					pinctrl_mmc0_cd: mmc0_cd {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOE 31 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
+					};
+
+					pinctrl_mmc0_en: mmc0_en {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOE 30 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
+					};
+
+					pinctrl_usb_vbus: usb_vbus {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOE 20 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
+					};
+
+					pinctrl_usb_oc: usb_oc {
+						atmel,pins =
+							<AT91_PIOE 15 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
+					};
+
+					pinctrl_usba_vbus: usba_vbus {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOC 14 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
+					};
+
+					pinctrl_geth_int: geth_int {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOB 25 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
+					};
+
+					pinctrl_eth_int: eth_int {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOC 10 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
+					};
+
+				};
+			};
+		};
+	};
 };
 
+&mmc0 {
+	u-boot,dm-pre-reloc;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_cd>;
+
+	vmmc-supply = <&reg_mmc0_en>;
+	status = "okay";
+
+	slot@0 {
+		reg = <0>;
+		bus-width = <4>;
+		cd-gpios = <&pioE 31 GPIO_ACTIVE_HIGH>;
+		cd-inverted;
+	};
+};
+
+&macb0 {
+	status = "okay";
+
+	ethernet-phy@7 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_geth_int>;
+
+		reg = <7>;
+		interrupt-parent = <&pioB>;
+		interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
+	};
+};
+
+&macb1 {
+	status = "okay";
+
+	ethernet-phy@1 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_eth_int>;
+
+		reg = <1>;
+		interrupt-parent = <&pioC>;
+		interrupts = <10 IRQ_TYPE_EDGE_FALLING>;
+	};
+};
 
 &dbgu {
 	u-boot,dm-pre-reloc;
 	status = "okay";
 };
 
-&pit {
-	u-boot,dm-pre-reloc;
-	status = "okay";
-};
-
-
-&macb0 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
-
-	ethernet-phy@7 {
-		reg = <7>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_geth_int>;
-		interrupt-parent = <&pioB>;
-		interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
-		txen-skew-ps = <800>;
-		txc-skew-ps = <3000>;
-		rxdv-skew-ps = <400>;
-		rxc-skew-ps = <3000>;
-		rxd0-skew-ps = <400>;
-		rxd1-skew-ps = <400>;
-		rxd2-skew-ps = <400>;
-		rxd3-skew-ps = <400>;
-	};
-};
-
-&macb1 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
-
-	ethernet-phy@1 {
-		reg = <1>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_eth_int>;
-		interrupt-parent = <&pioC>;
-		interrupts = <10 IRQ_TYPE_EDGE_FALLING>;
-	};
-};
-
 &usb0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usba_vbus>;
+
+	atmel,vbus-gpio = <&pioC 14 GPIO_ACTIVE_HIGH>;
+
 	status = "okay";
 };
 
@@ -88,3 +170,38 @@
 	status = "okay";
 };
 
+&nand0 {
+	pinctrl-0 = <&pinctrl_nand0_ale_cle &pinctrl_nand0_wp>;
+	nand-bus-width = <8>;
+	nand-ecc-mode = "hw";
+	atmel,has-pmecc;
+	atmel,pmecc-cap = <8>;
+	atmel,pmecc-sector-size = <512>;
+	nand-on-flash-bbt;
+	status = "okay";
+
+	ubootspl@0 {
+		label = "u-boot-spl";
+		reg = <0x0 0x20000>;
+	};
+
+	uboot@20000 {
+		label = "u-boot";
+		reg = <0x20000 0x80000>;
+	};
+
+	ubootenv@a0000 {
+		label = "u-boot-env";
+		reg = <0xa0000 0x20000>;
+	};
+
+	ubootenv@c0000 {
+		label = "u-boot-env";
+		reg = <0xc0000 0x20000>;
+	};
+
+	ubi@e0000 {
+		label = "ubi";
+		reg = <0xe0000 0x1fc00000>;
+	};
+};
