@@ -63,26 +63,6 @@
 	};
 };
 
-/* Wi-Fi MMC */
-&mmc1 {
-	status = "okay";
-
-	slot@0 {
-		reg = <0>;
-		bus-width = <4>;
-	};
-
-	/* Describe shutdown pin PMU_EN */
-};
-
-/* BT UART */
-&usart0 {
-	atmel,use-dma-rx;
-	atmel,use-dma-tx;
-	status = "okay";
-	pinctrl-0 = <&pinctrl_usart0 &pinctrl_usart0_rts_cts>;
-};
-
 &adc0 {
 	pinctrl-0 = <
 		&pinctrl_adc0_adtrg &pinctrl_adc0_ad0 &pinctrl_adc0_ad1
@@ -92,10 +72,14 @@
 };
 
 &macb0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	phy-mode = "rgmii";
 };
 
 &macb1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
 	phy-mode = "rmii";
 };
 
