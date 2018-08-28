@@ -125,3 +125,10 @@
 #define CONFIG_SPL_GENERATE_ATMEL_PMECC_HEADER
 
 #endif
+
+/*Enable Watchdog in UBoot*/
+#define CONFIG_AT91SAM9_WATCHDOG
+#define CONFIG_AT91_HW_WDT_TIMEOUT	16
+#if !defined(CONFIG_SPL_BUILD)
+#define CONFIG_HW_WATCHDOG
+#endif
