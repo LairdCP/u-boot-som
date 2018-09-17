@@ -34,7 +34,9 @@
 			"ubi create kernel_${part} 800000 static;"			\
 			"ubi create rootfs_${part} 5200000 static;"			\
 			"ubi create rootfs_data_${part} 1E00000 dynamic;"	\
-		"done\0"
+		"done;" \
+		"ubi create rodata 1400000 dynamic;" \
+		"ubi create ig 8e00000 dynamic\0"
 
 #define CONFIG_ENV_VARS_UBOOT_CONFIG
 

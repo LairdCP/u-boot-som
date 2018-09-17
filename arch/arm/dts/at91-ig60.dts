@@ -104,6 +104,20 @@
 			};
 		};
 	};
+
+	/*
+	 * This is a development-only AES-128 key passed from U-Boot into
+	 * the kernel for the encrypted filesystems; it will be
+	 * replaced in manufacturing with a production key.
+	 */
+	encryption {
+		laird,fs-key = <
+			0xbf4a626e 0x68ddba72 0x36094531 0x15fa806c
+			0x38862932 0x3078d54f 0x0b3e3d9f 0x0adfaae5
+			0xb194f2cd 0x402bc3c6 0x35b7d66c 0xd06c9e8d
+			0xc080cede 0xd8bff74a 0xc16c2cfe 0xeaca5bbf
+				>;
+	};
 };
 
 &mmc0 {
