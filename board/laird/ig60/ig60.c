@@ -19,6 +19,7 @@
 #include <asm/arch/at91_wdt.h>
 #include <asm/arch/atmel_usba_udc.h>
 #include <linux/ctype.h>
+#include <linux/mtd/rawnand.h>
 #include <uboot_aes.h>
 #include <asm/arch/at91_sck.h>
 
@@ -59,30 +60,193 @@ static void at91sama5d3_slowclock_init(void)
 	}
 }
 
-void ig60_nand_hw_init(void)
+/* Configures NAND controller from the timing table supplied */
+static void atmel_smc_nand_prepare(const struct nand_sdr_timings *timings)
 {
 	struct at91_smc *smc = (struct at91_smc *)ATMEL_BASE_SMC;
 
+	u32 ncycles, totalcycles, timeps, mckperiodps;
+	u32 setup_reg, pulse_reg, cycle_reg, timings_reg, mode_reg;
+
+	setup_reg = 0;
+	pulse_reg = 0;
+	cycle_reg = 0;
+	timings_reg = 0;
+	mode_reg = 0;
+
+	/* Clock to period in ps */
+	mckperiodps = 1000000000 / get_mck_clk_rate() * 1000;
+
+	/*
+	 * Set write pulse timing. This one is easy to extract:
+	 *
+	 * NWE_PULSE = tWP
+	 */
+	ncycles = DIV_ROUND_UP(timings->tWP_min, mckperiodps);
+	totalcycles = ncycles;
+	pulse_reg |= AT91_SMC_PULSE_NWE(ncycles);
+
+	/*
+	 * The write setup timing depends on the operation done on the NAND.
+	 * All operations goes through the same data bus, but the operation
+	 * type depends on the address we are writing to (ALE/CLE address
+	 * lines).
+	 * Since we have no way to differentiate the different operations at
+	 * the SMC level, we must consider the worst case (the biggest setup
+	 * time among all operation types):
+	 *
+	 * NWE_SETUP = max(tCLS, tCS, tALS, tDS) - NWE_PULSE
+	 */
+	timeps = max3(timings->tCLS_min, timings->tCS_min, timings->tALS_min);
+	timeps = max(timeps, timings->tDS_min);
+	ncycles = DIV_ROUND_UP(timeps, mckperiodps);
+	ncycles = ncycles > totalcycles ? ncycles - totalcycles : 0;
+	totalcycles += ncycles;
+	setup_reg |= AT91_SMC_SETUP_NWE(ncycles);
+
+	/*
+	 * As for the write setup timing, the write hold timing depends on the
+	 * operation done on the NAND:
+	 *
+	 * NWE_HOLD = max(tCLH, tCH, tALH, tDH, tWH)
+	 */
+	timeps = max3(timings->tCLH_min, timings->tCH_min, timings->tALH_min);
+	timeps = max3(timeps, timings->tDH_min, timings->tWH_min);
+	ncycles = DIV_ROUND_UP(timeps, mckperiodps);
+	totalcycles += ncycles;
+
+	/*
+	 * The write cycle timing is directly matching tWC, but is also
+	 * dependent on the other timings on the setup and hold timings we
+	 * calculated earlier, which gives:
+	 *
+	 * NWE_CYCLE = max(tWC, NWE_SETUP + NWE_PULSE + NWE_HOLD)
+	 */
+	ncycles = DIV_ROUND_UP(timings->tWC_min, mckperiodps);
+	ncycles = max(totalcycles, ncycles);
+	cycle_reg |= AT91_SMC_CYCLE_NWE(ncycles);
+
+	/*
+	 * We don't want the CS line to be toggled between each byte/word
+	 * transfer to the NAND. The only way to guarantee that is to have the
+	 * NCS_{WR,RD}_{SETUP,HOLD} timings set to 0, which in turn means:
+	 *
+	 * NCS_WR_PULSE = NWE_CYCLE
+	 */
+	pulse_reg |= AT91_SMC_PULSE_NCS_WR(ncycles);
+
+	/*
+	 * As for the write setup timing, the read hold timing depends on the
+	 * operation done on the NAND:
+	 *
+	 * NRD_HOLD = max(tREH, tRHOH)
+	 */
+	timeps = max(timings->tREH_min, timings->tRHOH_min);
+	ncycles = DIV_ROUND_UP(timeps, mckperiodps);
+	totalcycles = ncycles;
+
+	/*
+	 * TDF = tRHZ - NRD_HOLD
+	 */
+	ncycles = DIV_ROUND_UP(timings->tRHZ_max, mckperiodps);
+	ncycles -= totalcycles;
+
+	/*
+	 * In ONFI 4.0 specs, tRHZ has been increased to support EDO NANDs and
+	 * we might end up with a config that does not fit in the TDF field.
+	 * Just take the max value in this case and hope that the NAND is more
+	 * tolerant than advertised.
+	 */
+	if (ncycles > 15)
+		ncycles = 15;
+	else if (ncycles < 1)
+		ncycles = 1;
+
+	mode_reg |= AT91_SMC_MODE_TDF_CYCLE(ncycles) | AT91_SMC_MODE_TDF;
+
+	/*
+	 * Read pulse timing directly matches tRP:
+	 *
+	 * NRD_PULSE = tRP
+	 */
+	ncycles = DIV_ROUND_UP(timings->tRP_min, mckperiodps);
+	totalcycles += ncycles;
+	pulse_reg |= AT91_SMC_PULSE_NRD(ncycles);
+
+	/*
+	 * The read cycle timing is directly matching tRC, but is also
+	 * dependent on the setup and hold timings we calculated earlier,
+	 * which gives:
+	 *
+	 * NRD_CYCLE = max(tRC, NRD_PULSE + NRD_HOLD)
+	 *
+	 * NRD_SETUP is always 0.
+	 */
+	ncycles = DIV_ROUND_UP(timings->tRC_min, mckperiodps);
+	ncycles = max(totalcycles, ncycles);
+	cycle_reg |= AT91_SMC_CYCLE_NRD(ncycles);
+
+	/*
+	 * We don't want the CS line to be toggled between each byte/word
+	 * transfer from the NAND. The only way to guarantee that is to have
+	 * the NCS_{WR,RD}_{SETUP,HOLD} timings set to 0, which in turn means:
+	 *
+	 * NCS_RD_PULSE = NRD_CYCLE
+	 */
+	pulse_reg |= AT91_SMC_PULSE_NCS_RD(ncycles);
+
+	/* Txxx timings are directly matching tXXX ones. */
+	ncycles = DIV_ROUND_UP(timings->tCLR_min, mckperiodps);
+	timings_reg |= AT91_SMC_TIMINGS_TCLR(ncycles);
+
+	ncycles = DIV_ROUND_UP(timings->tADL_min, mckperiodps);
+	timings_reg |= AT91_SMC_TIMINGS_TADL(ncycles > 0xf ? 0xf : ncycles);
+
+	/*
+	 * Version 4 of the ONFI spec mandates that tADL be at least 400
+	 * nanoseconds, but, depending on the master clock rate, 400 ns may not
+	 * fit in the tADL field of the SMC reg.
+	 *
+	 * Note that previous versions of the ONFI spec had a lower tADL_min
+	 * (100 or 200 ns). It's not clear why this timing constraint got
+	 * increased but it seems most NANDs are fine with values lower than
+	 * 400ns, so we should be safe.
+	 */
+
+	ncycles = DIV_ROUND_UP(timings->tAR_min, mckperiodps);
+	timings_reg |= AT91_SMC_TIMINGS_TAR(ncycles);
+
+	ncycles = DIV_ROUND_UP(timings->tRR_min, mckperiodps);
+	timings_reg |= AT91_SMC_TIMINGS_TRR(ncycles);
+
+	ncycles = DIV_ROUND_UP(timings->tWB_max, mckperiodps);
+	timings_reg |= AT91_SMC_TIMINGS_TWB(ncycles);
+
+	/* Attach the CS line to the NFC logic. */
+	timings_reg |= AT91_SMC_TIMINGS_NFSEL(1) | AT91_SMC_TIMINGS_RBNSEL(3);
+
+	/* Operate in NRD/NWE READ/WRITEMODE. */
+	mode_reg |= AT91_SMC_MODE_RM_NRD | AT91_SMC_MODE_WM_NWE;
+
+	writel(setup_reg, &smc->cs[3].setup);
+	writel(pulse_reg, &smc->cs[3].pulse);
+	writel(cycle_reg, &smc->cs[3].cycle);
+	writel(timings_reg, &smc->cs[3].timings);
+	writel(mode_reg, &smc->cs[3].mode);
+}
+
+void ig60_nand_hw_init(void)
+{
+	/* Atmel SAMA5D3 NAND controller does not support EDO,
+	   so get fastest non-EDO timing mode - mode 3
+	   Any flash compatible with ONFI timing mode 3 will work now
+	*/
+	const struct nand_sdr_timings *timings =
+		onfi_async_timing_mode_to_sdr_timings(3);
+
 	at91_periph_clk_enable(ATMEL_ID_SMC);
 
-	/* Configure SMC CS3 for NAND/SmartMedia */
-	writel(AT91_SMC_SETUP_NWE(2) | AT91_SMC_SETUP_NCS_WR(1) |
-	       AT91_SMC_SETUP_NRD(2) | AT91_SMC_SETUP_NCS_RD(1),
-	       &smc->cs[3].setup);
-	writel(AT91_SMC_PULSE_NWE(2) | AT91_SMC_PULSE_NCS_WR(4) |
-	       AT91_SMC_PULSE_NRD(2) | AT91_SMC_PULSE_NCS_RD(4),
-	       &smc->cs[3].pulse);
-	writel(AT91_SMC_CYCLE_NWE(4) | AT91_SMC_CYCLE_NRD(4),
-	       &smc->cs[3].cycle);
-	writel(AT91_SMC_TIMINGS_TCLR(2) | AT91_SMC_TIMINGS_TADL(11) |
-	       AT91_SMC_TIMINGS_TAR(2)  | AT91_SMC_TIMINGS_TRR(3)   |
-	       AT91_SMC_TIMINGS_TWB(5)  | AT91_SMC_TIMINGS_RBNSEL(3)|
-	       AT91_SMC_TIMINGS_NFSEL(1), &smc->cs[3].timings);
-	writel(AT91_SMC_MODE_RM_NRD | AT91_SMC_MODE_WM_NWE |
-	       AT91_SMC_MODE_EXNW_DISABLE |
-	       AT91_SMC_MODE_DBW_8 |
-	       AT91_SMC_MODE_TDF_CYCLE(9), /* 65ns, 7.5757ns clock = 8.58 */
-	       &smc->cs[3].mode);
+	atmel_smc_nand_prepare(timings);
 
 	/* Disable Flash Write Protect Line */
 	at91_set_pio_output(AT91_PIO_PORTE, 14, 1);
@@ -224,7 +388,9 @@ int dram_init(void)
 #ifdef CONFIG_SPL_BUILD
 void spl_board_init(void)
 {
+#ifdef CONFIG_NAND_BOOT
 	ig60_nand_hw_init();
+#endif
 }
 
 #ifdef CONFIG_SPL_LOAD_FIT
