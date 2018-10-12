@@ -410,6 +410,8 @@ int net_loop(enum proto_t protocol)
 			eth_halt();
 			return ret;
 		}
+		/* Linux Ethernet PHY polling period is 1 sec, so wait */
+		udelay(1100000);
 	} else {
 		eth_init_state_only();
 	}
