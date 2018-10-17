@@ -36,20 +36,6 @@
 		enable-active-high;
 	};
 
-	reg_usb_vbus: reg_usb_vbus_grp {
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_usb_vbus>;
-
-		compatible = "regulator-fixed";
-		regulator-name = "VDD USB";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-
-		gpio = <&pioE 20 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-		regulator-always-on;
-	};
-
 	ahb {
 		apb {
 			pinctrl@fffff200 {
@@ -65,17 +51,6 @@
 						u-boot,dm-pre-reloc;
 						atmel,pins =
 							<AT91_PIOE 30 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
-					};
-
-					pinctrl_usb_vbus: usb_vbus {
-						u-boot,dm-pre-reloc;
-						atmel,pins =
-							<AT91_PIOE 20 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
-					};
-
-					pinctrl_usb_oc: usb_oc {
-						atmel,pins =
-							<AT91_PIOE 15 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
 					};
 
 					pinctrl_usba_vbus: usba_vbus {
@@ -139,7 +114,7 @@
 	};
 };
 
-&i2c1 {
+&i2c0 {
 	status = "okay";
 	clock-frequency = <400000>;
 
@@ -187,13 +162,5 @@
 
 	atmel,vbus-gpio = <&pioC 14 GPIO_ACTIVE_HIGH>;
 
-	status = "okay";
-};
-
-&usb1 {
-	status = "okay";
-};
-
-&usb2 {
 	status = "okay";
 };
