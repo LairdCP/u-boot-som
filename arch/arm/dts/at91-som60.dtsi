@@ -52,6 +52,9 @@
 };
 
 &tcb0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
 	timer0: timer@0 {
 		compatible = "atmel,tcb-timer";
 		reg = <0>;
@@ -74,12 +77,14 @@
 &macb0 {
 	#address-cells = <1>;
 	#size-cells = <0>;
+
 	phy-mode = "rgmii";
 };
 
 &macb1 {
 	#address-cells = <1>;
 	#size-cells = <0>;
+
 	phy-mode = "rmii";
 };
 

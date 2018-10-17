@@ -6,25 +6,26 @@
  */
 
 #include <common.h>
-#include <asm/io.h>
+
+#include <asm/arch/gpio.h>
+#include <asm/arch/clk.h>
+
 #include <asm/arch/sama5_sfr.h>
 #include <asm/arch/sama5d3_smc.h>
 #include <asm/arch/at91_common.h>
-#include <asm/arch/at91_rstc.h>
-#include <asm/arch/gpio.h>
-#include <asm/arch/clk.h>
-#include <debug_uart.h>
-#include <spl.h>
 #include <asm/arch/atmel_mpddrc.h>
-#include <asm/arch/at91_wdt.h>
 #include <asm/arch/atmel_usba_udc.h>
+#include <asm/arch/at91_sck.h>
+
 #include <linux/ctype.h>
 #include <linux/mtd/rawnand.h>
+
+#include <debug_uart.h>
 #include <uboot_aes.h>
-#include <asm/arch/at91_sck.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_FIT_SIGNATURE
 #define FS_MAX_KEY_SIZE	64
 #define FS_KEY_WINDOW	0x31e000
 
@@ -35,6 +36,7 @@ struct key_prop {
 	int cmac_key_len;
 	const void *iv;
 };
+#endif
 
 static void at91sama5d3_slowclock_init(void)
 {
@@ -75,7 +77,7 @@ static void atmel_smc_nand_prepare(const struct nand_sdr_timings *timings)
 	mode_reg = 0;
 
 	/* Clock to period in ps */
-	mckperiodps = 1000000000 / get_mck_clk_rate() * 1000;
+	mckperiodps = DIV_ROUND_DOWN_ULL(1000000000000ULL, get_mck_clk_rate());
 
 	/*
 	 * Set write pulse timing. This one is easy to extract:
@@ -200,7 +202,6 @@ static void atmel_smc_nand_prepare(const struct nand_sdr_timings *timings)
 	timings_reg |= AT91_SMC_TIMINGS_TCLR(ncycles);
 
 	ncycles = DIV_ROUND_UP(timings->tADL_min, mckperiodps);
-	timings_reg |= AT91_SMC_TIMINGS_TADL(ncycles > 0xf ? 0xf : ncycles);
 
 	/*
 	 * Version 4 of the ONFI spec mandates that tADL be at least 400
@@ -212,6 +213,10 @@ static void atmel_smc_nand_prepare(const struct nand_sdr_timings *timings)
 	 * increased but it seems most NANDs are fine with values lower than
 	 * 400ns, so we should be safe.
 	 */
+	if (ncycles > 15)
+		ncycles = 15;
+
+	timings_reg |= AT91_SMC_TIMINGS_TADL(ncycles);
 
 	ncycles = DIV_ROUND_UP(timings->tAR_min, mckperiodps);
 	timings_reg |= AT91_SMC_TIMINGS_TAR(ncycles);
@@ -259,6 +264,7 @@ static void som60_usb_hw_init(void)
     usba_udc_probe(&pdata);
 }
 
+#ifdef CONFIG_FIT_SIGNATURE
 void board_fit_image_post_process(void **p_image, size_t *p_size)
 {
 	u8 *image = (u8 *)*p_image;
@@ -318,6 +324,7 @@ void som60_fs_key_inject(void)
 
 	return;
 }
+#endif
 
 void board_debug_uart_init(void)
 {
@@ -340,7 +347,9 @@ int board_late_init(void)
 
 int board_early_init_f(void)
 {
+#ifdef CONFIG_DEBUG_UART
 	debug_uart_init();
+#endif
 
     return 0;
 }
@@ -352,10 +361,15 @@ int board_init(void)
 
 	at91sama5d3_slowclock_init();
 
+#ifndef CONFIG_NAND_BOOT
 	som60_nand_hw_init();
+#endif
+
 	som60_usb_hw_init();
 
+#ifdef CONFIG_FIT_SIGNATURE
 	som60_fs_key_inject();
+#endif
 
 	return 0;
 }
@@ -393,39 +407,34 @@ static void ddr2_conf(struct atmel_mpddrc_config *ddr2)
 	ddr2->md = (ATMEL_MPDDRC_MD_DBW_32_BITS | ATMEL_MPDDRC_MD_LPDDR_SDRAM);
 
 	ddr2->cr = (ATMEL_MPDDRC_CR_NC_COL_10 | //or 11 from DS
-		    ATMEL_MPDDRC_CR_NR_ROW_13 |
-		    ATMEL_MPDDRC_CR_CAS_DDR_CAS3 |
-		    ATMEL_MPDDRC_CR_ENRDM_ON |
-		    ATMEL_MPDDRC_CR_NDQS_DISABLED |
-		    ATMEL_MPDDRC_CR_DECOD_INTERLEAVED |
-		    ATMEL_MPDDRC_CR_UNAL_SUPPORTED);
-	/*
-	 * As the DDR2-SDRAm device requires a refresh time is 7.8125us
-	 * when DDR run at 133MHz, so it needs (7.8125us * 133MHz / 10^9) clocks
-	 */
-    /* TODO DDR running at 132MHz, 7.5757ns <--- NOT 133Mhz */
+	            ATMEL_MPDDRC_CR_NR_ROW_13 |
+	            ATMEL_MPDDRC_CR_CAS_DDR_CAS3 |
+	            ATMEL_MPDDRC_CR_ENRDM_ON |
+	            ATMEL_MPDDRC_CR_NDQS_DISABLED |
+	            ATMEL_MPDDRC_CR_DECOD_INTERLEAVED |
+	            ATMEL_MPDDRC_CR_UNAL_SUPPORTED);
 
-	ddr2->rtr = 0x411;
+	ddr2->rtr = 0x408;
 
 	ddr2->tpr0 = (6 << ATMEL_MPDDRC_TPR0_TRAS_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR0_TRCD_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR0_TWR_OFFSET |
-		      8 << ATMEL_MPDDRC_TPR0_TRC_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR0_TRP_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR0_TRRD_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR0_TWTR_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR0_TMRD_OFFSET);
+	              2 << ATMEL_MPDDRC_TPR0_TRCD_OFFSET |
+	              2 << ATMEL_MPDDRC_TPR0_TWR_OFFSET |
+	              8 << ATMEL_MPDDRC_TPR0_TRC_OFFSET |
+	              2 << ATMEL_MPDDRC_TPR0_TRP_OFFSET |
+	              2 << ATMEL_MPDDRC_TPR0_TRRD_OFFSET |
+	              2 << ATMEL_MPDDRC_TPR0_TWTR_OFFSET |
+	              2 << ATMEL_MPDDRC_TPR0_TMRD_OFFSET);
 
 	ddr2->tpr1 = (2 << ATMEL_MPDDRC_TPR1_TXP_OFFSET |
-		      200 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |
-		      19 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |
-		      18 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET);
+	              200 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |
+	              19 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |
+	              18 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET);
 
 	ddr2->tpr2 = (7 << ATMEL_MPDDRC_TPR2_TFAW_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET |
-		      3 << ATMEL_MPDDRC_TPR2_TRPA_OFFSET |
-		      7 << ATMEL_MPDDRC_TPR2_TXARDS_OFFSET |
-		      2 << ATMEL_MPDDRC_TPR2_TXARD_OFFSET);
+	              2 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET |
+	              3 << ATMEL_MPDDRC_TPR2_TRPA_OFFSET |
+	              7 << ATMEL_MPDDRC_TPR2_TXARDS_OFFSET |
+	              2 << ATMEL_MPDDRC_TPR2_TXARD_OFFSET);
 }
 
 void mem_init(void)
