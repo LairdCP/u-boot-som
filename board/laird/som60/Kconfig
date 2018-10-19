@@ -10,3 +10,16 @@ config SYS_CONFIG_NAME
 	default "som60"
 
 endif
+
+if TARGET_IG60
+
+config SYS_BOARD
+	default "som60"
+
+config SYS_VENDOR
+	default "laird"
+
+config SYS_CONFIG_NAME
+	default "ig60"
+
+endif

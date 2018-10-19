@@ -23,6 +23,8 @@
 #include <debug_uart.h>
 #include <uboot_aes.h>
 
+#include "som60_def.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef CONFIG_FIT_SIGNATURE
@@ -354,6 +356,10 @@ int board_early_init_f(void)
     return 0;
 }
 
+void __weak som60_custom_hw_init()
+{
+}
+
 int board_init(void)
 {
 	/* adress of boot parameters */
@@ -366,7 +372,7 @@ int board_init(void)
 #endif
 
 	som60_usb_hw_init();
-
+	som60_custom_hw_init();
 #ifdef CONFIG_FIT_SIGNATURE
 	som60_fs_key_inject();
 #endif

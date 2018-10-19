@@ -4,3 +4,4 @@
 #
 
 obj-y += som60.o
+obj-$(CONFIG_TARGET_IG60) += ig60.o
