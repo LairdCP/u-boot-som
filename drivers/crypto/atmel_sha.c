@@ -6,7 +6,6 @@
 #include <malloc.h>
 #include "atmel_sha.h"
 
-#ifdef CONFIG_SHA_HW_ACCEL
 #include <u-boot/sha256.h>
 #include <u-boot/sha1.h>
 #include <hw_sha.h>
@@ -295,4 +294,3 @@ int hw_sha_finish(struct hash_algo *algo, void *ctx, void *dest_buf,
 	return 0;
 }
 
-#endif /* CONFIG_SHA_HW_ACCEL */
