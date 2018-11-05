@@ -23,6 +23,8 @@
 #include <debug_uart.h>
 #include <uboot_aes.h>
 
+#include <../drivers/crypto/atmel_trng.h>
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef CONFIG_FIT_SIGNATURE
@@ -367,6 +369,8 @@ int board_init(void)
 
 	som60_usb_hw_init();
 
+	atmel_trng_init();
+
 #ifdef CONFIG_FIT_SIGNATURE
 	som60_fs_key_inject();
 #endif
@@ -381,7 +385,6 @@ int dram_init(void)
 
 	return 0;
 }
-
 
 /* SPL */
 #ifdef CONFIG_SPL_BUILD
