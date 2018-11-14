@@ -39,7 +39,34 @@ static int i2c_eeprom_std_read(struct udevice *dev, int offset, uint8_t *buf,
 static int i2c_eeprom_std_write(struct udevice *dev, int offset,
 				const uint8_t *buf, int size)
 {
-	return -ENODEV;
+	struct i2c_eeprom *priv = dev_get_priv(dev);
+	unsigned chunk = 0, chunk_len;
+	int ret;
+
+	/*
+	 * EEPROM page writes are constrained to page boundary
+	 * so on the 1st iteration write from the start offset to the page
+	 * boundary subsequently keep writing page size data chunks
+	 */
+
+	chunk_len = (~offset & (priv->pagesize - 1)) + 1;
+
+	while (chunk < size) {
+		if (chunk_len > size - chunk)
+			chunk_len = size - chunk;
+
+		ret = dm_i2c_write(dev, offset + chunk, buf + chunk, chunk_len);
+		if (ret)
+			return ret;
+
+		/* EEPROM Write takes 5 ms, so wait */
+		udelay(5000);
+
+		chunk += chunk_len;
+		chunk_len = priv->pagesize;
+	}
+
+	return 0;
 }
 
 static const struct i2c_eeprom_ops i2c_eeprom_std_ops = {
@@ -55,6 +82,8 @@ static int i2c_eeprom_std_ofdata_to_platdata(struct udevice *dev)
 	/* 6 bit -> page size of up to 2^63 (should be sufficient) */
 	priv->pagewidth = data & 0x3F;
 	priv->pagesize = (1 << priv->pagewidth);
+
+	i2c_set_chip_offset_len(dev, 2);
 
 	return 0;
 }

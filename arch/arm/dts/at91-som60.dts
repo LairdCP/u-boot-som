@@ -118,9 +118,9 @@
 	status = "okay";
 	clock-frequency = <400000>;
 
-	eeprom@87 {
+	eeprom@57 {
 		compatible = "atmel,24c32";
-		reg = <87>;
+		reg = <0x57>;
 		pagesize = <32>;
 	};
 };
