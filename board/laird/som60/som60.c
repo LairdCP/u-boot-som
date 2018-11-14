@@ -1,12 +1,14 @@
 /*
  * Copyright (C) 2018 Laird
- * Ben Whitten <ben.whitten@lairdtech.com
+ * 	Ben Whitten <ben.whitten@lairdtech.com>
+ * 	Boris Krasnovskiy <boris.krasnovskiy@lairdtech.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 
+#include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
 #include <asm/arch/clk.h>
 
@@ -257,7 +259,7 @@ void som60_nand_hw_init(void)
 
 	atmel_smc_nand_prepare(timings);
 
-	/* Disable Flash Write Protect Line */
+	/* Disable Flash Write Protect discrete */
 	at91_set_pio_output(AT91_PIO_PORTE, 14, 1);
 }
 
@@ -364,7 +366,7 @@ void __weak som60_custom_hw_init()
 
 int board_init(void)
 {
-	/* adress of boot parameters */
+	/* address of boot parameters */
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 
 	at91sama5d3_slowclock_init();
