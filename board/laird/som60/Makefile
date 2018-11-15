@@ -6,5 +6,5 @@
 obj-y += som60.o
 
 ifndef CONFIG_SPL_BUILD
-obj-$(CONFIG_I2C_EEPROM) += sys_eeprom.o
+obj-$(CONFIG_ID_EEPROM) += sys_eeprom.o
 endif
