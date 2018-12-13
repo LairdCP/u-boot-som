@@ -136,4 +136,11 @@
 #define CONFIG_SYS_NAND_BAD_BLOCK_POS   0x0
 #define CONFIG_SPL_GENERATE_ATMEL_PMECC_HEADER
 
+/* Enable Watchdog in U-Boot */
+#define CONFIG_AT91SAM9_WATCHDOG
+#define CONFIG_AT91_HW_WDT_TIMEOUT	16
+#if !defined(CONFIG_SPL_BUILD)
+#define CONFIG_HW_WATCHDOG
+#endif
+
 #endif
