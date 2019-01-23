@@ -30,7 +30,7 @@ u32 spl_boot_mode(const u32 boot_device)
 {
 	switch (spl_boot_device()) {
 	case BOOT_DEVICE_MMC1:
-#ifdef CONFIG_SPL_FAT_SUPPORT
+#ifdef CONFIG_SPL_FS_FAT
 		return MMCSD_MODE_FS;
 #else
 		return MMCSD_MODE_RAW;
