@@ -409,57 +409,97 @@ int board_fit_config_name_match(const char *name)
 }
 #endif
 
-static void ddr2_conf(struct atmel_mpddrc_config *ddr2)
+/* Timing for MT29C2G24MAAAAKAMD-5 */
+static void lpddr1_conf(struct atmel_mpddrc_config *lpddr1)
 {
-	ddr2->md = (ATMEL_MPDDRC_MD_DBW_32_BITS | ATMEL_MPDDRC_MD_LPDDR_SDRAM);
+	lpddr1->md = (ATMEL_MPDDRC_MD_DBW_32_BITS | ATMEL_MPDDRC_MD_LPDDR_SDRAM);
 
-	ddr2->cr = (ATMEL_MPDDRC_CR_NC_COL_10 | //or 11 from DS
-	            ATMEL_MPDDRC_CR_NR_ROW_13 |
-	            ATMEL_MPDDRC_CR_CAS_DDR_CAS3 |
-	            ATMEL_MPDDRC_CR_ENRDM_ON |
-	            ATMEL_MPDDRC_CR_NDQS_DISABLED |
+	lpddr1->cr = (ATMEL_MPDDRC_CR_NC_COL_10       | //or 11 from DS
+	            ATMEL_MPDDRC_CR_NR_ROW_13         |
+	            ATMEL_MPDDRC_CR_CAS_DDR_CAS3      |
+	            ATMEL_MPDDRC_CR_ENRDM_ON          |
+	            ATMEL_MPDDRC_CR_NDQS_DISABLED     |
 	            ATMEL_MPDDRC_CR_DECOD_INTERLEAVED |
 	            ATMEL_MPDDRC_CR_UNAL_SUPPORTED);
 
-	ddr2->rtr = 0x408;
+	/*
+	 * The SDRAM device requires a refresh of all rows at least every 64ms.
+	 * ((64ms) / 8192) * 132MHz = 1031 i.e. 0x407
+	 */
+	lpddr1->rtr = 0x407;
 
-	ddr2->tpr0 = (6 << ATMEL_MPDDRC_TPR0_TRAS_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR0_TRCD_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR0_TWR_OFFSET |
-	              8 << ATMEL_MPDDRC_TPR0_TRC_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR0_TRP_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR0_TRRD_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR0_TWTR_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR0_TMRD_OFFSET);
+	lpddr1->tpr0 = (6 << ATMEL_MPDDRC_TPR0_TRAS_OFFSET  |
+	                2 << ATMEL_MPDDRC_TPR0_TRCD_OFFSET  |
+	                2 << ATMEL_MPDDRC_TPR0_TWR_OFFSET   |
+	                8 << ATMEL_MPDDRC_TPR0_TRC_OFFSET   |
+	                2 << ATMEL_MPDDRC_TPR0_TRP_OFFSET   |
+	                2 << ATMEL_MPDDRC_TPR0_TRRD_OFFSET  |
+	                2 << ATMEL_MPDDRC_TPR0_TWTR_OFFSET  |
+	                2 << ATMEL_MPDDRC_TPR0_TMRD_OFFSET);
 
-	ddr2->tpr1 = (2 << ATMEL_MPDDRC_TPR1_TXP_OFFSET |
-	              200 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |
-	              19 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |
-	              18 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET);
+	lpddr1->tpr1 = (2 << ATMEL_MPDDRC_TPR1_TXP_OFFSET   |
+	                0 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |
+	               15 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |
+	               10 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET);
 
-	ddr2->tpr2 = (7 << ATMEL_MPDDRC_TPR2_TFAW_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET |
-	              3 << ATMEL_MPDDRC_TPR2_TRPA_OFFSET |
-	              7 << ATMEL_MPDDRC_TPR2_TXARDS_OFFSET |
-	              2 << ATMEL_MPDDRC_TPR2_TXARD_OFFSET);
+	lpddr1->tpr2 = (4 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET);
+
+	lpddr1->lpr = (ATMEL_MPDDRC_LPR_LPCB_DISABLED       |
+	               ATMEL_MPDDRC_LPR_CLK_FR              |
+	               ATMEL_MPDDRC_LPR_PASR_(0)            |
+	               ATMEL_MPDDRC_LPR_DS_(1)              |
+	               ATMEL_MPDDRC_LPR_TIMEOUT_0           |
+	               ATMEL_MPDDRC_LPR_ADPE_FAST           |
+	               ATMEL_MPDDRC_LPR_UPD_MR_NO_UPDATE);
 }
 
 void mem_init(void)
 {
 	struct atmel_sfr *sfr = (struct atmel_sfr *)ATMEL_BASE_SFR;
-	struct atmel_mpddrc_config ddr2;
+	const struct atmel_mpddr *mpddr = (struct atmel_mpddr *)ATMEL_BASE_MPDDRC;
 
-	ddr2_conf(&ddr2);
+	struct atmel_mpddrc_config lpddr1;
+	u32 reg;
+
+	lpddr1_conf(&lpddr1);
 
 	writel(ATMEL_SFR_DDRCFG_FDQIEN | ATMEL_SFR_DDRCFG_FDQSIEN,
-	       &sfr->ddrcfg);
+		&sfr->ddrcfg);
 
 	/* Enable MPDDR clock */
 	at91_periph_clk_enable(ATMEL_ID_MPDDRC);
 	at91_system_clk_enable(AT91_PMC_DDR);
 
-	/* DDRAM2 Controller initialize */
-	ddr2_init(ATMEL_BASE_MPDDRC, ATMEL_BASE_DDRCS, &ddr2);
+	/* Init the special register for sama5d3x */
+	/* MPDDRC DLL Slave Offset Register: DDR2 configuration */
+	reg = ATMEL_MPDDRC_SOR_S0OFF_1
+		| ATMEL_MPDDRC_SOR_S2OFF_1
+		| ATMEL_MPDDRC_SOR_S3OFF_1;
+	writel(reg, &mpddr->sor);
+
+	/* MPDDRC DLL Master Offset Register */
+	/* write master + clk90 offset */
+	reg = ATMEL_MPDDRC_MOR_MOFF_7
+		| ATMEL_MPDDRC_MOR_CLK90OFF_31
+		| ATMEL_MPDDRC_MOR_SELOFF_ENABLED;
+	writel(reg, &mpddr->mor);
+
+	/* MPDDRC I/O Calibration Register */
+	/* LPDDR1 RZQ = 52 Ohm */
+	/* TZQIO = (133 * 10^6) * (20 * 10^-9) + 1 = 3.66 == 4 */
+	reg = readl(&mpddr->io_calibr);
+	reg &= ~ATMEL_MPDDRC_IO_CALIBR_RDIV;
+	reg &= ~ATMEL_MPDDRC_IO_CALIBR_TZQIO;
+	reg |= ATMEL_MPDDRC_IO_CALIBR_DDR2_RZQ_52;
+	reg |= ATMEL_MPDDRC_IO_CALIBR_TZQIO_(4);
+	writel(reg, &mpddr->io_calibr);
+
+	reg = readl(&mpddr->hs);
+	reg |= ATMEL_MPDDRC_DDR2_EN_CALIB;
+	writel(reg, &mpddr->hs);
+
+	/* LPDDRAM1 Controller initialize */
+	lpddr1_init(ATMEL_BASE_MPDDRC, ATMEL_BASE_DDRCS, &lpddr1);
 }
 
 void at91_pmc_init(void)
