@@ -19,6 +19,11 @@
 #include <malloc.h>
 #include <usb/lin_gadget_compat.h>
 
+#include <dm.h>
+#include <dm/device.h>
+#include <usb.h>
+#include <asm/arch/atmel_usba_udc.h>
+
 #include "atmel_usba_udc.h"
 
 static int vbus_is_present(struct usba_udc *udc)
@@ -1303,3 +1308,43 @@ int usba_udc_probe(struct usba_platform_data *pdata)
 
 	return 0;
 }
+
+static int usba_udc_usb_probe(struct udevice *dev)
+{
+	/* Enable UPLL clock */
+	at91_upll_clk_enable();
+
+	/* Enable UDPHS clock */
+	at91_periph_clk_enable(ATMEL_ID_UDPHS);
+
+	return usba_udc_probe(&pdata);
+}
+
+static int usba_udc_usb_remove(struct udevice *dev)
+{
+	printf("usb eth done\n");
+	atmel_usba_stop(&controller);
+
+	/* Disable UDPHS clock */
+	at91_periph_clk_disable(ATMEL_ID_UDPHS);
+
+	/* Disable UPLL clock */
+	at91_upll_clk_disable();
+
+	return 0;
+}
+
+static const struct udevice_id usba_udc_ids[] = {
+	{ .compatible = "atmel,sama5d3-udc" },
+	{ }
+};
+
+U_BOOT_DRIVER(usb_usba_udc) = {
+	.name		= "atmel-usba_udc",
+	.id		= UCLASS_USB_DEV_GENERIC,
+	.of_match	= usba_udc_ids,
+	.probe		= usba_udc_usb_probe,
+	.remove		= usba_udc_usb_remove,
+	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
+	.flags	= DM_FLAG_OS_PREPARE,
+};

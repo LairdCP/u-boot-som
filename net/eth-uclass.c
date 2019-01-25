@@ -13,6 +13,7 @@
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 #include "eth_internal.h"
+#include <console.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -290,6 +291,11 @@ int eth_init(void)
 			debug("PROBE FAIL\n");
 		}
 
+		if (ctrlc()) {
+			ret = -EINTR;
+			break;
+		}
+
 		/*
 		 * If ethrotate is enabled, this will change "current",
 		 * otherwise we will drop out of this while loop immediately
@@ -511,8 +517,9 @@ static int eth_post_probe(struct udevice *dev)
 		memcpy(pdata->enetaddr, env_enetaddr, ARP_HLEN);
 	} else if (is_valid_ethaddr(pdata->enetaddr)) {
 		eth_env_set_enetaddr_by_index("eth", dev->seq, pdata->enetaddr);
-		printf("\nWarning: %s using MAC address from ROM\n",
-		       dev->name);
+		if (strcmp("usb_ether", dev->name))
+			printf("\nWarning: %s using MAC address from ROM\n",
+				   dev->name);
 	} else if (is_zero_ethaddr(pdata->enetaddr) ||
 		   !is_valid_ethaddr(pdata->enetaddr)) {
 #ifdef CONFIG_NET_RANDOM_ETHADDR

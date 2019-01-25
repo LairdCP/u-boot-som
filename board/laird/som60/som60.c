@@ -16,7 +16,6 @@
 #include <asm/arch/sama5d3_smc.h>
 #include <asm/arch/at91_common.h>
 #include <asm/arch/atmel_mpddrc.h>
-#include <asm/arch/atmel_usba_udc.h>
 #include <asm/arch/at91_sck.h>
 
 #include <linux/ctype.h>
@@ -263,13 +262,6 @@ void som60_nand_hw_init(void)
 	at91_set_pio_output(AT91_PIO_PORTE, 14, 1);
 }
 
-static void som60_usb_hw_init(void)
-{
-    at91_udp_hw_init();
-
-    usba_udc_probe(&pdata);
-}
-
 #ifdef CONFIG_FIT_SIGNATURE
 void board_fit_image_post_process(void **p_image, size_t *p_size)
 {
@@ -348,6 +340,10 @@ int board_late_init(void)
 	strcat(name, "-som60");
 	env_set(LAIRD_NAME, name);
 
+#ifdef CONFIG_USB_ETHER
+	usb_ether_init();
+#endif
+
     return 0;
 }
 
@@ -374,8 +370,6 @@ int board_init(void)
 #ifndef CONFIG_NAND_BOOT
 	som60_nand_hw_init();
 #endif
-
-	som60_usb_hw_init();
 
 	atmel_trng_init();
 

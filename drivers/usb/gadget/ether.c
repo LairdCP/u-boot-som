@@ -158,6 +158,8 @@ struct ether_priv {
 struct ether_priv eth_priv;
 struct ether_priv *l_priv = &eth_priv;
 
+void _usb_eth_halt(struct ether_priv *priv);
+
 /*-------------------------------------------------------------------------*/
 
 /* "main" config is either CDC, or its simple subset */
@@ -2427,7 +2429,8 @@ static int _usb_eth_init(struct ether_priv *priv)
 	while (!dev->network_started) {
 		/* Handle control-c and timeouts */
 		if (ctrlc() || (get_timer(ts) > timeout)) {
-			pr_err("The remote end did not respond in time.");
+			pr_err("The remote end did not respond in time.\n");
+			_usb_eth_halt(priv);
 			goto fail;
 		}
 		usb_gadget_handle_interrupts(0);
