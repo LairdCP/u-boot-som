@@ -60,6 +60,7 @@ static int at91_wdt_settimeout(unsigned int timeout)
 
 	reg = AT91_WDT_MR_WDRSTEN		/* causes watchdog reset */
 		| AT91_WDT_MR_WDDBGHLT		/* disabled in debug mode */
+		| AT91_WDT_MR_WDIDLEHLT 	/* disabled in idle mode */
 		| AT91_WDT_MR_WDD(0xfff)	/* restart at any time */
 		| AT91_WDT_MR_WDV(timeout);	/* timer value */
 
