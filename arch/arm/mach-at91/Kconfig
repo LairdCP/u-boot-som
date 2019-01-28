@@ -244,7 +244,7 @@ config TARGET_WB45N
 config TARGET_WB50N
 	bool "Support Laird WB50N"
 	select BOARD_LATE_INIT
-	select CPU_V7
+	select SAMA5D3
 	select SUPPORT_SPL
 	select BOARD_EARLY_INIT_F
 
