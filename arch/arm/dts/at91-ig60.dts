@@ -82,12 +82,6 @@
 							<AT91_PIOE 15 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
 					};
 
-					pinctrl_usba_vbus: usba_vbus {
-						u-boot,dm-pre-reloc;
-						atmel,pins =
-							<AT91_PIOC 14 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
-					};
-
 					pinctrl_geth_int: geth_int {
 						u-boot,dm-pre-reloc;
 						atmel,pins =
@@ -131,8 +125,7 @@
 	slot@0 {
 		reg = <0>;
 		bus-width = <4>;
-		cd-gpios = <&pioE 31 GPIO_ACTIVE_HIGH>;
-		cd-inverted;
+		cd-gpios = <&pioE 31 GPIO_ACTIVE_LOW>;
 	};
 };
 
@@ -164,23 +157,6 @@
 
 &dbgu {
 	u-boot,dm-pre-reloc;
-	status = "okay";
-};
-
-&usb0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usba_vbus>;
-
-	atmel,vbus-gpio = <&pioC 14 GPIO_ACTIVE_HIGH>;
-
-	status = "okay";
-};
-
-&usb1 {
-	status = "okay";
-};
-
-&usb2 {
 	status = "okay";
 };
 
