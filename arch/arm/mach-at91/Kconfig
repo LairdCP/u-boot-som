@@ -297,7 +297,6 @@ source "board/siemens/corvus/Kconfig"
 source "board/siemens/taurus/Kconfig"
 source "board/siemens/smartweb/Kconfig"
 source "board/laird/wb45n/Kconfig"
-source "board/laird/wb50n/Kconfig"
 source "board/laird/som60/Kconfig"
 
 config SPL_LDSCRIPT
