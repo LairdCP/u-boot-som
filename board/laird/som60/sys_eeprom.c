@@ -62,7 +62,7 @@ static void show_eeprom(void)
  */
 static int read_eeprom(void)
 {
-	int ret, i;
+	int ret;
 
 	if (!dev) {
 		ret = uclass_first_device_err(UCLASS_I2C_EEPROM, &dev);

@@ -291,6 +291,8 @@ int hw_sha_finish(struct hash_algo *algo, void *ctx, void *dest_buf,
 
 	free(ctx);
 
+	at91_periph_clk_disable(ATMEL_ID_SHA);
+
 	return 0;
 }
 

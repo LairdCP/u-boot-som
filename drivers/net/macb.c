@@ -1073,6 +1073,12 @@ static int macb_eth_probe(struct udevice *dev)
 static int macb_eth_remove(struct udevice *dev)
 {
 	struct macb_device *macb = dev_get_priv(dev);
+	struct clk clk;
+	int ret;
+
+	ret = clk_get_by_index(dev, 0, &clk);
+	if (!ret)
+		clk_disable(&clk);
 
 #ifdef CONFIG_PHYLIB
 	free(macb->phydev);
@@ -1110,6 +1116,7 @@ U_BOOT_DRIVER(eth_macb) = {
 	.ops	= &macb_eth_ops,
 	.priv_auto_alloc_size = sizeof(struct macb_device),
 	.platdata_auto_alloc_size = sizeof(struct eth_pdata),
+	.flags	= DM_FLAG_OS_PREPARE,
 };
 #endif
 
