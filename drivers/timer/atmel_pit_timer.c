@@ -60,6 +60,16 @@ static int atmel_pit_probe(struct udevice *dev)
 	return 0;
 }
 
+static int atmel_pit_remove(struct udevice *dev)
+{
+	struct atmel_pit_platdata *plat = dev_get_platdata(dev);
+	struct atmel_pit_regs *const regs = plat->regs;
+
+	writel(0, &regs->mode);
+
+	return 0;
+}
+
 static int atmel_pit_ofdata_to_platdata(struct udevice *dev)
 {
 	struct atmel_pit_platdata *plat = dev_get_platdata(dev);
@@ -85,6 +95,7 @@ U_BOOT_DRIVER(atmel_pit) = {
 	.ofdata_to_platdata = atmel_pit_ofdata_to_platdata,
 	.platdata_auto_alloc_size = sizeof(struct atmel_pit_platdata),
 	.probe	= atmel_pit_probe,
+	.remove = atmel_pit_remove,
 	.ops	= &atmel_pit_ops,
-	.flags	= DM_FLAG_PRE_RELOC,
+	.flags	= DM_FLAG_PRE_RELOC | DM_FLAG_OS_PREPARE,
 };

@@ -382,6 +382,11 @@ int board_init(void)
 	return 0;
 }
 
+void board_quiesce_devices(void)
+{
+	atmel_trng_remove();
+}
+
 int dram_init(void)
 {
 	gd->ram_size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE,

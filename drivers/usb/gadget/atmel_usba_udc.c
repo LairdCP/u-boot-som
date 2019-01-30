@@ -23,6 +23,7 @@
 #include <dm/device.h>
 #include <usb.h>
 #include <asm/arch/atmel_usba_udc.h>
+#include <asm/arch/clk.h>
 
 #include "atmel_usba_udc.h"
 
@@ -1309,6 +1310,7 @@ int usba_udc_probe(struct usba_platform_data *pdata)
 	return 0;
 }
 
+#ifdef CONFIG_DM_USB
 static int usba_udc_usb_probe(struct udevice *dev)
 {
 	/* Enable UPLL clock */
@@ -1322,7 +1324,6 @@ static int usba_udc_usb_probe(struct udevice *dev)
 
 static int usba_udc_usb_remove(struct udevice *dev)
 {
-	printf("usb eth done\n");
 	atmel_usba_stop(&controller);
 
 	/* Disable UDPHS clock */
@@ -1348,3 +1349,4 @@ U_BOOT_DRIVER(usb_usba_udc) = {
 	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
 	.flags	= DM_FLAG_OS_PREPARE,
 };
+#endif

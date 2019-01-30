@@ -387,6 +387,7 @@ static void at91emac_halt(struct eth_device *netdev)
 	emac = (at91_emac_t *) netdev->iobase;
 	writel(readl(&emac->ctl) & ~(AT91_EMAC_CTL_TE | AT91_EMAC_CTL_RE),
 		&emac->ctl);
+	at91_periph_clk_disable(ATMEL_ID_EMAC);
 	debug_cond(DEBUG_AT91EMAC, "halt MAC\n");
 }
 

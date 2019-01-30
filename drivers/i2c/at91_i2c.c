@@ -260,6 +260,18 @@ static int at91_i2c_probe(struct udevice *dev)
 	return 0;
 }
 
+static int at91_i2c_remove(struct udevice *dev)
+{
+	struct clk clk;
+	int ret;
+
+	ret = clk_get_by_index(dev, 0, &clk);
+	if (!ret)
+		clk_disable(&clk);
+
+	return 0;
+}
+
 static const struct at91_i2c_pdata at91rm9200_config = {
 	.clk_max_div = 5,
 	.clk_offset = 3,
@@ -317,8 +329,10 @@ U_BOOT_DRIVER(i2c_at91) = {
 	.id	= UCLASS_I2C,
 	.of_match = at91_i2c_ids,
 	.probe = at91_i2c_probe,
+	.remove = at91_i2c_remove,
 	.ofdata_to_platdata = at91_i2c_ofdata_to_platdata,
 	.per_child_auto_alloc_size = sizeof(struct dm_i2c_chip),
 	.priv_auto_alloc_size = sizeof(struct at91_i2c_bus),
 	.ops	= &at91_i2c_ops,
+	.flags	= DM_FLAG_OS_PREPARE,
 };
