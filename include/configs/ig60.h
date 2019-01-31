@@ -23,8 +23,9 @@
 			"ubi create rootfs_${part} 5200000 static;"			\
 			"ubi create rootfs_data_${part} 1E00000 dynamic;"	\
 		"done;" \
-		"ubi create rodata 1400000 dynamic;" \
-		"ubi create ig 8e00000 dynamic\0"
+		"ubi create rodata 800000 dynamic;" \
+		"ubi create ig 8e00000 dynamic;" \
+		"ubi create perm 1800000 dynamic\0"
 
 /*Enable Watchdog in UBoot*/
 #define CONFIG_AT91SAM9_WATCHDOG
