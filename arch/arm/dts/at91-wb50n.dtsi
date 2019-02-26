@@ -32,6 +32,11 @@
 		apb {
 			pinctrl@fffff200 {
 				board {
+					pinctrl_nand0_wp: nand0_wp {
+						u-boot,dm-pre-reloc;
+						atmel,pins = <AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
+					};
+
 					pinctrl_mmc0_cd: mmc0_cd {
 						u-boot,dm-pre-reloc;
 						atmel,pins = <AT91_PIOC 26 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>; /* PC26 GPIO with pullup deglitch */
@@ -128,7 +133,7 @@
 };
 
 &nand0 {
-	pinctrl-0 = <&pinctrl_nand0_ale_cle>;
+	pinctrl-0 = <&pinctrl_nand0_ale_cle &pinctrl_nand0_wp>;
 	nand-bus-width = <8>;
 	nand-ecc-mode = "hw";
 	atmel,has-pmecc;
