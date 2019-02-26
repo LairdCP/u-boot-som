@@ -385,6 +385,10 @@ int board_init(void)
 void board_quiesce_devices(void)
 {
 	atmel_trng_remove();
+
+	/* Activate Flash Write Protect discrete,
+	 * so that flash enter standby if not used in kernel */
+	at91_set_pio_output(AT91_PIO_PORTE, 14, 0);
 }
 
 int dram_init(void)

@@ -28,7 +28,7 @@
 					pinctrl_nand0_wp: nand0_wp {
 						u-boot,dm-pre-reloc;
 						atmel,pins =
-							<AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP>;
+							<AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
 					};
 				};
 			};
