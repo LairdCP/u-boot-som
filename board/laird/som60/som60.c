@@ -247,6 +247,8 @@ static void atmel_smc_nand_prepare(const struct nand_sdr_timings *timings)
 
 void som60_nand_hw_init(void)
 {
+	struct atmel_sfr *sfr = (struct atmel_sfr *)ATMEL_BASE_SFR;
+
 	/* Atmel SAMA5D3 NAND controller does not support EDO,
 	   so get fastest non-EDO timing mode - mode 3
 	   Any flash compatible with ONFI timing mode 3 will work now
@@ -501,8 +503,9 @@ void mem_init(void)
 
 	lpddr1_conf(&lpddr1);
 
-	writel(ATMEL_SFR_DDRCFG_FDQIEN | ATMEL_SFR_DDRCFG_FDQSIEN,
-		&sfr->ddrcfg);
+	reg = readl(&sfr->ddrcfg);
+	reg |= (ATMEL_SFR_DDRCFG_FDQIEN | ATMEL_SFR_DDRCFG_FDQSIEN);
+	writel(reg, &sfr->ddrcfg);
 
 	/* Enable MPDDR clock */
 	at91_periph_clk_enable(ATMEL_ID_MPDDRC);
@@ -538,6 +541,10 @@ void mem_init(void)
 
 	/* LPDDRAM1 Controller initialize */
 	lpddr1_init(ATMEL_BASE_MPDDRC, ATMEL_BASE_DDRCS, &lpddr1);
+
+	reg = readl(&sfr->ddrcfg);
+	reg &= ~(ATMEL_SFR_DDRCFG_FDQIEN | ATMEL_SFR_DDRCFG_FDQSIEN);
+	writel(reg, &sfr->ddrcfg);
 }
 
 void at91_pmc_init(void)
