@@ -22,7 +22,7 @@ CONFIG_SPL_FIT_SOURCE="board/laird/som60/fit_spl.its"
 CONFIG_SD_BOOT=y
 CONFIG_BOOTDELAY=3
 CONFIG_USE_BOOTARGS=y
-CONFIG_BOOTARGS="rw root=/dev/mmcblk0p2 loglevel=4"
+CONFIG_BOOTARGS="rw root=/dev/mmcblk0p3 resume=/dev/mmcblk0p2 loglevel=4"
 CONFIG_USE_BOOTCOMMAND=y
 CONFIG_BOOTCOMMAND="fatload mmc 0 0x21000000 kernel.itb; bootm"
 # CONFIG_DISPLAY_BOARDINFO is not set
