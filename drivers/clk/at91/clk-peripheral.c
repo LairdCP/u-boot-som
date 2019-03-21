@@ -52,7 +52,7 @@ U_BOOT_DRIVER(sam9x5_periph_clk) = {
 
 /*---------------------------------------------------------*/
 
-static int periph_clk_enable(struct clk *clk)
+static int periph_clk_op(struct clk *clk, bool enable)
 {
 	struct pmc_platdata *plat = dev_get_platdata(clk->dev);
 	struct at91_pmc *pmc = plat->reg_base;
@@ -64,18 +64,32 @@ static int periph_clk_enable(struct clk *clk)
 
 	clk_type = dev_get_driver_data(dev_get_parent(clk->dev));
 	if (clk_type == CLK_PERIPH_AT91RM9200) {
-		addr = &pmc->pcer;
+		addr = enable ? &pmc->pcer : &pmc->pcdr;
 		if (clk->id > PERIPHERAL_ID_MAX)
-			addr = &pmc->pcer1;
+			addr = enable ? &pmc->pcer1 : &pmc->pcdr1;
 
 		setbits_le32(addr, PERIPHERAL_MASK(clk->id));
 	} else {
 		writel(clk->id & AT91_PMC_PCR_PID_MASK, &pmc->pcr);
-		setbits_le32(&pmc->pcr,
-			     AT91_PMC_PCR_CMD_WRITE | AT91_PMC_PCR_EN);
+		if (enable)
+			setbits_le32(&pmc->pcr,
+					 AT91_PMC_PCR_CMD_WRITE | AT91_PMC_PCR_EN);
+		else
+			clrsetbits_le32(&pmc->pcr, AT91_PMC_PCR_EN,
+				AT91_PMC_PCR_CMD_WRITE);
 	}
 
 	return 0;
+}
+
+static int periph_clk_enable(struct clk *clk)
+{
+	return periph_clk_op(clk, true);
+}
+
+static int periph_clk_disable(struct clk *clk)
+{
+	return periph_clk_op(clk, false);
 }
 
 static ulong periph_get_rate(struct clk *clk)
@@ -101,6 +115,7 @@ static ulong periph_get_rate(struct clk *clk)
 static struct clk_ops periph_clk_ops = {
 	.of_xlate = at91_clk_of_xlate,
 	.enable = periph_clk_enable,
+	.disable = periph_clk_disable,
 	.get_rate = periph_get_rate,
 };
 
