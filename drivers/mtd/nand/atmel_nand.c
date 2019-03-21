@@ -1238,6 +1238,26 @@ static int at91_nand_ready(struct mtd_info *mtd)
 }
 #endif
 
+/* Configures NAND controller from the timing table supplied */
+int __weak atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
+				       const struct nand_data_interface *conf)
+{
+	const struct nand_sdr_timings *timings;
+
+	timings = nand_get_sdr_timings(conf);
+	if (IS_ERR(timings))
+		return PTR_ERR(timings);
+
+	/*
+	 * tRC < 30ns implies EDO mode. This controller does not support this
+	 * mode.
+	 */
+	if (timings->tRC_min < 30000)
+		return -ENOTSUPP;
+
+	return 0;
+}
+
 #ifdef CONFIG_SPL_BUILD
 /* The following code is for SPL */
 static struct mtd_info *mtd;
@@ -1479,6 +1499,8 @@ int atmel_nand_chip_init(int devnum, ulong base_addr)
 #ifdef CONFIG_SYS_NAND_USE_FLASH_BBT
 	nand->bbt_options |= NAND_BBT_USE_FLASH;
 #endif
+
+	nand->setup_data_interface = atmel_setup_data_interface;
 
 	ret = nand_scan_ident(mtd, CONFIG_SYS_NAND_MAX_CHIPS, NULL);
 	if (ret)

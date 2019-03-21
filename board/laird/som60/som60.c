@@ -68,12 +68,29 @@ static void at91sama5d3_slowclock_init(void)
 }
 
 /* Configures NAND controller from the timing table supplied */
-static void atmel_smc_nand_prepare(const struct nand_sdr_timings *timings)
+int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
+				       const struct nand_data_interface *conf)
 {
 	struct at91_smc *smc = (struct at91_smc *)ATMEL_BASE_SMC;
 
 	u32 ncycles, totalcycles, timeps, mckperiodps;
 	u32 setup_reg, pulse_reg, cycle_reg, timings_reg, mode_reg;
+
+	const struct nand_sdr_timings *timings;
+
+	timings = nand_get_sdr_timings(conf);
+	if (IS_ERR(timings))
+		return PTR_ERR(timings);
+
+	/*
+	 * tRC < 30ns implies EDO mode. This controller does not support this
+	 * mode.
+	 */
+	if (timings->tRC_min < 30000)
+		return -ENOTSUPP;
+
+	if (chipnr == NAND_DATA_IFACE_CHECK_ONLY)
+		return 0;
 
 	setup_reg = 0;
 	pulse_reg = 0;
@@ -243,25 +260,8 @@ static void atmel_smc_nand_prepare(const struct nand_sdr_timings *timings)
 	writel(cycle_reg, &smc->cs[3].cycle);
 	writel(timings_reg, &smc->cs[3].timings);
 	writel(mode_reg, &smc->cs[3].mode);
-}
 
-void som60_nand_hw_init(void)
-{
-	struct atmel_sfr *sfr = (struct atmel_sfr *)ATMEL_BASE_SFR;
-
-	/* Atmel SAMA5D3 NAND controller does not support EDO,
-	   so get fastest non-EDO timing mode - mode 3
-	   Any flash compatible with ONFI timing mode 3 will work now
-	*/
-	const struct nand_sdr_timings *timings =
-		onfi_async_timing_mode_to_sdr_timings(3);
-
-	at91_periph_clk_enable(ATMEL_ID_SMC);
-
-	atmel_smc_nand_prepare(timings);
-
-	/* Disable Flash Write Protect discrete */
-	at91_set_pio_output(AT91_PIO_PORTE, 14, 1);
+	return 0;
 }
 
 #ifdef CONFIG_FIT_SIGNATURE
@@ -369,8 +369,11 @@ int board_init(void)
 
 	at91sama5d3_slowclock_init();
 
-#ifndef CONFIG_NAND_BOOT
-	som60_nand_hw_init();
+#if defined(CONFIG_NAND)
+	at91_periph_clk_enable(ATMEL_ID_SMC);
+
+	/* Disable Flash Write Protect discrete */
+	at91_set_pio_output(AT91_PIO_PORTE, 14, 1);
 #endif
 
 	atmel_trng_init();
@@ -388,9 +391,15 @@ void board_quiesce_devices(void)
 {
 	atmel_trng_remove();
 
+#ifdef CONFIG_NAND
 	/* Activate Flash Write Protect discrete,
 	 * so that flash enter standby if not used in kernel */
 	at91_set_pio_output(AT91_PIO_PORTE, 14, 0);
+
+#ifndef CONFIG_NAND_BOOT
+	at91_periph_clk_disable(ATMEL_ID_SMC);
+#endif
+#endif
 }
 
 int dram_init(void)
@@ -406,7 +415,13 @@ int dram_init(void)
 void spl_board_init(void)
 {
 #ifdef CONFIG_NAND_BOOT
-	som60_nand_hw_init();
+	const struct nand_data_interface *conf;
+
+	at91_periph_clk_enable(ATMEL_ID_SMC);
+
+	conf = nand_get_default_data_interface();
+	ret = atmel_setup_data_interface(NULL, 1, conf);
+
 #endif
 }
 
