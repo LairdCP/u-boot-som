@@ -1025,6 +1025,19 @@ static int macb_enable_clk(struct udevice *dev)
 
 	return 0;
 }
+
+static void macb_disable_clk(struct udevice *dev)
+{
+	struct clk clk;
+	int ret;
+
+	ret = clk_get_by_index(dev, 0, &clk);
+	if (!ret)
+		clk_disable(&clk);
+}
+#else
+static int macb_enable_clk(struct udevice *dev) { return 0; }
+static void macb_disable_clk(struct udevice *dev) {}
 #endif
 
 static int macb_eth_probe(struct udevice *dev)
@@ -1045,25 +1058,27 @@ static int macb_eth_probe(struct udevice *dev)
 
 	macb->regs = (void *)pdata->iobase;
 
-#ifdef CONFIG_CLK
 	ret = macb_enable_clk(dev);
 	if (ret)
 		return ret;
-#endif
 
 	_macb_eth_initialize(macb);
 
 #if defined(CONFIG_CMD_MII) || defined(CONFIG_PHYLIB)
 	macb->bus = mdio_alloc();
-	if (!macb->bus)
+	if (!macb->bus) {
+		macb_disable_clk(dev);
 		return -ENOMEM;
+	}
 	strncpy(macb->bus->name, dev->name, MDIO_NAME_LEN);
 	macb->bus->read = macb_miiphy_read;
 	macb->bus->write = macb_miiphy_write;
 
 	ret = mdio_register(macb->bus);
-	if (ret < 0)
+	if (ret < 0) {
+		macb_disable_clk(dev);
 		return ret;
+	}
 	macb->bus = miiphy_get_dev_by_name(dev->name);
 #endif
 
@@ -1073,12 +1088,8 @@ static int macb_eth_probe(struct udevice *dev)
 static int macb_eth_remove(struct udevice *dev)
 {
 	struct macb_device *macb = dev_get_priv(dev);
-	struct clk clk;
-	int ret;
 
-	ret = clk_get_by_index(dev, 0, &clk);
-	if (!ret)
-		clk_disable(&clk);
+	macb_disable_clk(dev);
 
 #ifdef CONFIG_PHYLIB
 	free(macb->phydev);

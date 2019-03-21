@@ -44,18 +44,19 @@ static inline int is_pck(int id)
 	return (id >= 8) && (id <= 15);
 }
 
-static int system_clk_enable(struct clk *clk)
+static int system_clk_op(struct clk *clk, bool enable)
 {
 	struct pmc_platdata *plat = dev_get_platdata(clk->dev);
 	struct at91_pmc *pmc = plat->reg_base;
-	u32 mask;
+	u32 mask, maskchk;
 
 	if (clk->id > SYSTEM_MAX_ID)
 		return -EINVAL;
 
 	mask = BIT(clk->id);
+	maskchk = enable ? mask : 0;
 
-	writel(mask, &pmc->scer);
+	writel(mask, enable ? &pmc->scer : &pmc->scdr);
 
 	/**
 	 * For the programmable clocks the Ready status in the PMC
@@ -65,15 +66,26 @@ static int system_clk_enable(struct clk *clk)
 	if (!is_pck(clk->id))
 		return 0;
 
-	while (!(readl(&pmc->sr) & mask))
+	while ((readl(&pmc->sr) & mask) != maskchk)
 		;
 
 	return 0;
 }
 
+static int system_clk_enable(struct clk *clk)
+{
+	return system_clk_op(clk, true);
+}
+
+static int system_clk_disable(struct clk *clk)
+{
+	return system_clk_op(clk, false);
+}
+
 static struct clk_ops system_clk_ops = {
 	.of_xlate = at91_clk_of_xlate,
 	.enable = system_clk_enable,
+	.disable = system_clk_disable,
 };
 
 U_BOOT_DRIVER(system_clk) = {
