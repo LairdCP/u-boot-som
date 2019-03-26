@@ -22,7 +22,7 @@ CONFIG_NAND_BOOT=y
 CONFIG_BOOTDELAY=-2
 CONFIG_USE_BOOTARGS=y
 CONFIG_USE_BOOTCOMMAND=y
-CONFIG_BOOTCOMMAND="ubi part ubi; run _setbootvol; ubi read 0x21000000 kernel_${bootside}; source 0x21000000:script; bootm"
+CONFIG_BOOTCOMMAND="ubi part ubi; run _setbootvol; ubi read 0x21000000 kernel_${bootside}; source 0x21000000:script; while true; do bootm; done"
 # CONFIG_DISPLAY_BOARDINFO is not set
 CONFIG_SPL=y
 # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
@@ -41,6 +41,7 @@ CONFIG_AUTOBOOT_STOP_STR_SHA256="347c124f5fa98c1ffc727eed29d65eee04056289421fe17
 # CONFIG_CMD_BDI is not set
 # CONFIG_CMD_CONSOLE is not set
 # CONFIG_CMD_ELF is not set
+# CONFIG_CMD_FDT is not set
 # CONFIG_CMD_GO is not set
 # CONFIG_CMD_IMI is not set
 # CONFIG_CMD_XIMG is not set
