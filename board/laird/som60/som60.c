@@ -420,8 +420,7 @@ void spl_board_init(void)
 	at91_periph_clk_enable(ATMEL_ID_SMC);
 
 	conf = nand_get_default_data_interface();
-	ret = atmel_setup_data_interface(NULL, 1, conf);
-
+	atmel_setup_data_interface(NULL, 1, conf);
 #endif
 }
 
