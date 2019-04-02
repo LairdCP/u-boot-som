@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * at91-wb50n-uart - Device Tree file for wb50n board with only debug uart enabled
+ *
+ *  Copyright (C) 2019 Laird
+ *
+ */
+
+/dts-v1/;
+#include "at91-wb50n.dtsi"
+
+&dbgu {
+	status = "okay";
+};
