@@ -22,7 +22,6 @@
 #define HAVE_ERR_REMOVE_THREAD_STATE
 #endif
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
 /**
  * convert_line_feeds() - helper function to convert '\n' to LF within a character string
  *
@@ -56,6 +55,7 @@ static size_t convert_line_feeds(const char *in, char *out, size_t max_out)
 	return cnt;
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static void RSA_get0_key(const RSA *r,
                  const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
 {
