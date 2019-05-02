@@ -270,7 +270,7 @@ void board_fit_image_post_process(void **p_image, size_t *p_size)
 	u8 *image = (u8 *)*p_image;
 	int enc_node, aes_blocks;
 	struct key_prop prop;
-	u8 key_exp[AES_EXPAND_KEY_LENGTH];
+	u8 key_exp[AES_EXPAND_KEY_LENGTH] __attribute__ ((aligned(4)));
 	u8 padding;
 
 	enc_node = fdt_subnode_offset(gd->fdt_blob, 0, "encryption");
@@ -287,7 +287,7 @@ void board_fit_image_post_process(void **p_image, size_t *p_size)
 
 	puts("   Decrypting ... ");
 	/* got to be 128bit */
-	aes_blocks = DIV_ROUND_UP(*p_size, prop.cipher_key_len);
+	aes_blocks = DIV_ROUND_UP(*p_size, AES_KEY_LENGTH);
 	aes_cbc_decrypt_blocks(key_exp, (u8 *)prop.iv, image, image, aes_blocks);
 	puts("OK\n");
 
