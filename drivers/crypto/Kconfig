@@ -16,4 +16,11 @@ config ATMEL_TRNG
 	help
 	  Enables the Atmel True RNG.
 
+config ATMEL_AES
+	bool "Atmel AES Driver support"
+	depends on ARCH_AT91
+	default y
+	help
+	  Enables the Atmel AES.
+
 endmenu
