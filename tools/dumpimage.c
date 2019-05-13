@@ -12,6 +12,32 @@
 
 static void usage(void);
 
+#define UBI_DEV_START "/dev/ubi"
+#define UBI_SYSFS "/sys/class/ubi"
+
+static int is_ubi_devname(const char *devname)
+{
+	return !strncmp(devname, UBI_DEV_START, sizeof(UBI_DEV_START) - 1);
+}
+
+static off_t get_ubi_data_size(const char *devname)
+{
+	FILE *file;
+	off_t res = 0;
+	char path[256];
+
+	snprintf(path, sizeof(path), UBI_SYSFS "%s/data_bytes", devname + 4);
+
+	file = fopen(path, "r");
+	if (file) {
+		if (fscanf(file, "%jd", &res) != 1)
+			res = 0;
+		fclose(file);
+	}
+
+	return res;
+}
+
 /* parameters initialized by core will be used by the image type code */
 static struct image_tool_params params = {
 	.type = IH_TYPE_KERNEL,
@@ -61,8 +87,9 @@ int main(int argc, char **argv)
 	int ifd = -1;
 	struct stat sbuf;
 	char *ptr;
-	int retval = 0;
+	int retval = EXIT_SUCCESS;
 	struct image_type_params *tparams = NULL;
+	bool is_ubi;
 
 	params.cmdname = *argv;
 
@@ -138,26 +165,58 @@ int main(int argc, char **argv)
 	}
 
 	if (params.lflag || params.iflag) {
-		if (fstat(ifd, &sbuf) < 0) {
+		retval = EXIT_FAILURE;
+		is_ubi = is_ubi_devname(params.imagefile);
+		if (is_ubi) {
+			memset(&sbuf, 0, sizeof(sbuf));
+			sbuf.st_size = get_ubi_data_size(params.imagefile);
+			sbuf.st_mode = S_IFREG;
+		} else if (fstat(ifd, &sbuf) < 0) {
 			fprintf(stderr, "%s: Can't stat \"%s\": %s\n",
 				params.cmdname, params.imagefile,
 				strerror(errno));
-			exit(EXIT_FAILURE);
+			goto fail;
 		}
 
-		if ((uint32_t)sbuf.st_size < tparams->header_size) {
+		if (S_ISREG(sbuf.st_mode)) {
+			if ((uint32_t)sbuf.st_size < tparams->header_size) {
+				fprintf(stderr,
+					"%s: Bad size: \"%s\" is not valid image\n",
+					params.cmdname, params.imagefile);
+				goto fail;
+			}
+		} else {
 			fprintf(stderr,
-				"%s: Bad size: \"%s\" is not valid image\n",
+				"%s: \"%s\" is not valid image\n",
 				params.cmdname, params.imagefile);
-			exit(EXIT_FAILURE);
+			goto fail;
 		}
 
-		ptr = mmap(0, sbuf.st_size, PROT_READ, MAP_SHARED, ifd, 0);
-		if (ptr == MAP_FAILED) {
-			fprintf(stderr, "%s: Can't read \"%s\": %s\n",
-				params.cmdname, params.imagefile,
-				strerror(errno));
-			exit(EXIT_FAILURE);
+		if (is_ubi) {
+			ptr = malloc(sbuf.st_size + 1);
+			if (!ptr) {
+				fprintf(stderr, "%s: Not enough memory \"%s\": %s\n",
+					params.cmdname, params.imagefile,
+					strerror(errno));
+				goto fail;
+			}
+
+			retval = read(ifd, ptr, sbuf.st_size);
+			if (retval < 0) {
+				fprintf(stderr, "%s: Can't read \"%s\": %s\n",
+					params.cmdname, params.imagefile,
+					strerror(errno));
+				free(ptr);
+				goto fail;
+			}
+		} else {
+			ptr = mmap(0, sbuf.st_size, PROT_READ, MAP_SHARED, ifd, 0);
+			if (ptr == MAP_FAILED) {
+				fprintf(stderr, "%s: Can't read \"%s\": %s\n",
+					params.cmdname, params.imagefile,
+					strerror(errno));
+				goto fail;
+			}
 		}
 
 		/*
@@ -181,15 +240,16 @@ int main(int argc, char **argv)
 					tparams, &params);
 		}
 
-		(void)munmap((void *)ptr, sbuf.st_size);
-		(void)close(ifd);
-
-		return retval;
+		if (is_ubi)
+			free(ptr);
+		else
+			(void)munmap((void *)ptr, sbuf.st_size);
 	}
 
+fail:
 	(void)close(ifd);
 
-	return EXIT_SUCCESS;
+	return retval;
 }
 
 static void usage(void)
