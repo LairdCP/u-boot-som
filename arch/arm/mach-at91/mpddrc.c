@@ -20,8 +20,14 @@ static inline void atmel_mpddr_op(const struct atmel_mpddr *mpddr,
 	      u32 ram_address)
 {
 	writel(mode, &mpddr->mr);
+	readl(&mpddr->mr);
+
 	dmb();
+
 	writel(0, ram_address);
+
+	if (mode == ATMEL_MPDDRC_MR_MODE_RFSH_CMD)
+		writel(0, ram_address);
 }
 
 static int ddr2_decodtype_is_seq(const unsigned int base, u32 cr)
@@ -133,7 +139,7 @@ int ddr2_init(const unsigned int base,
 	atmel_mpddr_op(mpddr, ATMEL_MPDDRC_MR_MODE_EXT_LMR_CMD,
 		       ram_address + (0x1 << ba_off));
 
-	/* A nornal mode command is provided */
+	/* A normal mode command is provided */
 	atmel_mpddr_op(mpddr, ATMEL_MPDDRC_MR_MODE_NORMAL_CMD, ram_address);
 
 	/* Perform a write access to any DDR2-SDRAM address */
@@ -337,12 +343,7 @@ int lpddr1_init(const unsigned int base,
 	atmel_mpddr_op(mpddr, ATMEL_MPDDRC_MR_MODE_NORMAL_CMD, ram_address);
 
 	/*
-	 * Step 12: Perform a write access to any low-power DDR1-SDRAM address.
-	 */
-	writel(0, ram_address);
-
-	/*
-	 * Step 14: Write the refresh rate into the COUNT field in the MPDDRC
+	 * Step 12: Write the refresh rate into the COUNT field in the MPDDRC
 	 * Refresh Timer Register (MPDDRC_RTR):
 	 */
 	writel(mpddr_value->rtr, &mpddr->rtr);
