@@ -56,7 +56,7 @@
 		"for part in a b; do " \
 			"ubi create kernel_${part}  800000 static;" \
 			"ubi create rootfs_${part} 5200000 static;" \
-			"ubi create rootfs_data_${part} 1E00000 dynamic;" \
+			"ubi create rootfs_data_${part} 1E20000 dynamic;" \
 		"done\0"
 
 #endif
@@ -76,8 +76,8 @@
  */
 
 /* u-boot env in nand flash */
-#define CONFIG_ENV_OFFSET               0xA0000
-#define CONFIG_ENV_OFFSET_REDUND        0xC0000
+#define CONFIG_ENV_OFFSET               0x140000
+#define CONFIG_ENV_OFFSET_REDUND        0x160000
 #define CONFIG_ENV_SIZE                 0x20000
 
 #define CONFIG_SYS_LONGHELP
@@ -134,8 +134,6 @@
 #define CONFIG_SYS_SPL_MALLOC_START     0x20080000
 #define CONFIG_SYS_SPL_MALLOC_SIZE      0x80000
 
-#define CONFIG_SYS_MONITOR_LEN          (512 << 10)
-
 #ifdef CONFIG_I2C_EEPROM
 
 #define CONFIG_ID_EEPROM
@@ -147,12 +145,15 @@
 
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION	1
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"u-boot.itb"
+#define CONFIG_SYS_MONITOR_LEN          (512 << 10)
 
 #elif CONFIG_NAND_BOOT
 
 #define CONFIG_SPL_NAND_DRIVERS
 #define CONFIG_SPL_NAND_BASE
 #define CONFIG_SPL_NAND_IDENT
+
+#define CONFIG_SYS_MONITOR_LEN          (1152 << 10)
 
 #endif
 

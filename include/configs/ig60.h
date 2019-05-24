@@ -38,3 +38,12 @@
 #define CONFIG_BOOTCOUNT_ENV
 #define CONFIG_BOOTCOUNT_LIMIT
 
+/* u-boot env in nand flash */
+#undef CONFIG_ENV_OFFSET
+#undef CONFIG_ENV_OFFSET_REDUND
+#define CONFIG_ENV_OFFSET               0xA0000
+#define CONFIG_ENV_OFFSET_REDUND        0xC0000
+
+/* SPL */
+#undef CONFIG_SYS_MONITOR_LEN
+#define CONFIG_SYS_MONITOR_LEN          (512 << 10)
