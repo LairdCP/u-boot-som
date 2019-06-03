@@ -76,8 +76,8 @@
  */
 
 /* u-boot env in nand flash */
-#define CONFIG_ENV_OFFSET               0x140000
-#define CONFIG_ENV_OFFSET_REDUND        0x160000
+#define CONFIG_ENV_OFFSET               0x120000
+#define CONFIG_ENV_OFFSET_REDUND        0x140000
 #define CONFIG_ENV_SIZE                 0x20000
 
 #define CONFIG_SYS_LONGHELP
@@ -153,7 +153,7 @@
 #define CONFIG_SPL_NAND_BASE
 #define CONFIG_SPL_NAND_IDENT
 
-#define CONFIG_SYS_MONITOR_LEN          (1152 << 10)
+#define CONFIG_SYS_MONITOR_LEN          (1024 << 10)
 
 #endif
 

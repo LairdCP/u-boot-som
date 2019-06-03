@@ -55,7 +55,7 @@ CONFIG_CMD_HASH=y
 CONFIG_CMD_FAT=y
 CONFIG_CMD_FS_GENERIC=y
 CONFIG_MTDIDS_DEFAULT="nand0=atmel_nand"
-CONFIG_MTDPARTS_DEFAULT="mtdparts=atmel_nand:128k(spl)ro,1152k(uboot)ro,128k(env),128k(env_redundant),254M(ubi)"
+CONFIG_MTDPARTS_DEFAULT="mtdparts=atmel_nand:128k(spl)ro,1M(uboot)ro,128k(env),128k(env_redundant),260224k(ubi)"
 CONFIG_CMD_UBI=y
 # CONFIG_CMD_UBIFS is not set
 CONFIG_OF_CONTROL=y
