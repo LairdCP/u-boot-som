@@ -53,11 +53,12 @@
 	"fi\0" \
 	"_formatubi=nand erase.part ubi;" \
 		"ubi part ubi;" \
-		"for part in a b; do " \
-			"ubi create kernel_${part}  800000 static;" \
-			"ubi create rootfs_${part} 5200000 static;" \
-			"ubi create rootfs_data_${part} 1E20000 dynamic;" \
-		"done\0"
+		"for part in a b; do "									\
+			"ubi create kernel_${part} C00000 static;"			\
+			"ubi create rootfs_${part} 5800000 static;"			\
+			"ubi create rootfs_data_${part} A00000 dynamic;"	\
+		"done;" \
+		"ubi create data 1460000 dynamic\0"
 
 #endif
 
