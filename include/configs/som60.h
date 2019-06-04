@@ -36,9 +36,10 @@
 		"ubi part ubi;" \
 		"for part in a b; do " \
 			"ubi create kernel_${part}  800000 static;" \
-			"ubi create rootfs_${part} 2520000 static;" \
-			"ubi create rootfs_data_${part} ec0000 dynamic;" \
-		"done\0"
+			"ubi create rootfs_${part} 2C50000 static;" \
+			"ubi create rootfs_data_${part} 400000 dynamic;" \
+		"done;" \
+		"ubi create data 620000 dynamic\0"
 
 #else
 
