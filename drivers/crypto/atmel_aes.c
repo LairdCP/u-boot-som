@@ -72,6 +72,10 @@ static void atmel_aes_write_ctrl_key(u32 flags, const u8 *iv,
 
 	if (iv)
 		atmel_aes_write_block(AES_IVR(0), iv);
+	else if (flags & AES_MR_OPMOD_CBC) {
+		u32 ivt[ AES_BLOCK_SIZE / sizeof(u32) ] = { 0 };
+		atmel_aes_write_block(AES_IVR(0), (u8*)ivt);
+	}
 }
 
 static void atmel_aes_crypt(u8 *src, u8 *dst, u32 num_aes_blocks)

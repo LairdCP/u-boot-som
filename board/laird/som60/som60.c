@@ -279,8 +279,13 @@ void board_fit_image_post_process(void **p_image, size_t *p_size)
 		return;
 	}
 
-	prop.cipher_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cipher-key", &prop.cipher_key_len);
-	prop.cmac_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cmac-key", &prop.cmac_key_len);
+	prop.cipher_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cipher-key",
+		&prop.cipher_key_len);
+	if (!prop.cipher_key)
+		return;
+
+	prop.cmac_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cmac-key",
+		&prop.cmac_key_len);
 	prop.iv = fdt_getprop(gd->fdt_blob, enc_node, "aes,iv", NULL);
 
 	aes_expand_key((u8 *)prop.cipher_key, key_exp);
