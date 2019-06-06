@@ -347,6 +347,13 @@ int board_late_init(void)
 
 	env_set("lrd_name", name);
 
+#if defined(CONFIG_TARGET_SOM60) || defined (CONFIG_TARGET_WB50)
+	if (gd->flags & GD_FLG_ENV_DEFAULT) {
+		puts("Saving default environment...\n");
+		env_save();
+	}
+#endif
+
 #ifdef CONFIG_USB_ETHER
 	usb_ether_init();
 #endif
