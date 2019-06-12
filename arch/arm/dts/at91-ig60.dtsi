@@ -1,0 +1,80 @@
+/*
+ * at91-ig60.dts - Device Tree file for the Sentrius IG60
+ *
+ *  Copyright (C) 2018 Laird,
+ *		  2018 James Kalbfleisch <james.kalbfleisch@lairdtech.com>
+ *
+ * Licensed under GPLv2 or later.
+ */
+
+
+/ {
+	reg_mmc0_en: reg_mmc0_en_grp {
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_mmc0_en>;
+
+		compatible = "regulator-fixed";
+		regulator-name = "VDD MMC0";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+
+		gpio = <&pioE 30 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	ahb {
+		apb {
+			pinctrl@fffff200 {
+				board {
+					u-boot,dm-pre-reloc;
+					pinctrl_mmc0_cd: mmc0_cd {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOE 31 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
+					};
+
+					pinctrl_mmc0_en: mmc0_en {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOE 30 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
+					};
+				};
+			};
+		};
+	};
+};
+
+&mmc0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_cd>;
+
+	vmmc-supply = <&reg_mmc0_en>;
+	status = "okay";
+
+	slot@0 {
+		reg = <0>;
+		bus-width = <4>;
+		cd-gpios = <&pioE 31 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&macb0 {
+	status = "okay";
+
+	ethernet-phy@7 {
+		reg = <7>;
+	};
+};
+
+&macb1 {
+	status = "okay";
+
+	ethernet-phy@1 {
+		reg = <1>;
+	};
+};
+
+&dbgu {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+};

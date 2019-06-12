@@ -5,7 +5,7 @@
  */
 
 /* The IG60 inherits most of the SOM60 configuration */
-#include "som60.h"
+#include "som60x2.h"
 
 /* Customize IG60 settings only */
 #undef CONFIG_EXTRA_ENV_SETTINGS
@@ -26,13 +26,6 @@
 		"ubi create rodata 800000 dynamic;" \
 		"ubi create ig 8e00000 dynamic;" \
 		"ubi create perm 1800000 dynamic\0"
-
-/*Enable Watchdog in UBoot*/
-#define CONFIG_AT91SAM9_WATCHDOG
-#define CONFIG_AT91_HW_WDT_TIMEOUT	16
-#if !defined(CONFIG_SPL_BUILD)
-#define CONFIG_HW_WATCHDOG
-#endif
 
 /* BOOTCOUNT */
 #define CONFIG_BOOTCOUNT_ENV

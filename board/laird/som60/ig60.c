@@ -9,12 +9,8 @@
 #include <asm/io.h>
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
-#include <spl.h>
-#include <linux/ctype.h>
 
-#include "som60_def.h"
-
-void som60_custom_hw_init()
+void som60_custom_hw_init(void)
 {
 	/* Turn off all LEDs, except power red/green to indicate U-Boot */
 	at91_set_pio_output(AT91_PIO_PORTA, 1, 1);

@@ -1,5 +1,5 @@
 /*
- * at91-ig60sd.dts - Device Tree file for the IG60SD board
+ * at91-ig60sd.dts - Device Tree file for the Sentrius IG60 SD
  *
  *  Copyright (C) 2019 Laird,
  *		  2019 Vishal Verma <vishal.verma@lairdconnect.com>
@@ -9,10 +9,13 @@
 
 /dts-v1/;
 
-#include "at91-ig60.dts"
+#include "at91-som60x2.dtsi"
+#include "at91-ig60.dtsi"
 
 / {
-	model = "Laird IG60SD";
+	model = "Laird IG60 LL";
+	compatible = "laird,ig60ll", "laird,som60x2", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
+
 	chosen {
 		stdout-path = "serial2:115200n8";
 	};
@@ -29,12 +32,6 @@
 				};
 
 				board {
-					pinctrl_usba_vbus: usba_vbus {
-						u-boot,dm-pre-reloc;
-						atmel,pins =
-						<AT91_PIOC 14 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
-					};
-
 					pinctrl_usart1_en: usuart1_en {
 						u-boot,dm-pre-reloc;
 						atmel,pins =
@@ -47,6 +44,10 @@
 	};
 };
 
+&mmc0 {
+	u-boot,dm-pre-reloc;
+};
+
 &usart1_clk {
 	u-boot,dm-pre-reloc;
 };
@@ -55,12 +56,5 @@
 	u-boot,dm-pre-reloc;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usart1 &pinctrl_usart1_en>;
-	status = "okay";
-};
-
-&usb0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usba_vbus>;
-	atmel,vbus-gpio = <&pioC 14 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
