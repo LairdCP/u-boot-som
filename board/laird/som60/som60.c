@@ -26,8 +26,6 @@
 
 #include <../drivers/crypto/atmel_trng.h>
 
-#include "som60_def.h"
-
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifdef CONFIG_FIT_SIGNATURE
@@ -370,7 +368,7 @@ int board_early_init_f(void)
     return 0;
 }
 
-void __weak som60_custom_hw_init()
+void __weak som60_custom_hw_init(void)
 {
 }
 
@@ -450,25 +448,7 @@ static void lpddr1_conf(struct atmel_mpddrc_config *lpddr1)
 {
 	lpddr1->md = (ATMEL_MPDDRC_MD_DBW_32_BITS | ATMEL_MPDDRC_MD_LPDDR_SDRAM);
 
-#ifdef CONFIG_TARGET_WB50N
-	/* Timing for MT46H16M32LF (5 & 6) */
-	lpddr1->cr = (ATMEL_MPDDRC_CR_NC_COL_9        |
-	            ATMEL_MPDDRC_CR_NR_ROW_13         |
-	            ATMEL_MPDDRC_CR_CAS_DDR_CAS3      |
-	            ATMEL_MPDDRC_CR_ENRDM_ON          |
-	            ATMEL_MPDDRC_CR_NDQS_DISABLED     |
-	            ATMEL_MPDDRC_CR_DECOD_INTERLEAVED |
-	            ATMEL_MPDDRC_CR_UNAL_SUPPORTED);
-#else
-	/* Timing for MT29C2G24MAAAAKAMD-5 */
-	lpddr1->cr = (ATMEL_MPDDRC_CR_NC_COL_10       | //or 11 from DS
-	            ATMEL_MPDDRC_CR_NR_ROW_13         |
-	            ATMEL_MPDDRC_CR_CAS_DDR_CAS3      |
-	            ATMEL_MPDDRC_CR_ENRDM_ON          |
-	            ATMEL_MPDDRC_CR_NDQS_DISABLED     |
-	            ATMEL_MPDDRC_CR_DECOD_INTERLEAVED |
-	            ATMEL_MPDDRC_CR_UNAL_SUPPORTED);
-#endif
+	lpddr1->cr = LPDDR_CR;
 
 	/*
 	 * The SDRAM device requires a refresh of all rows at least every 64ms.
@@ -476,37 +456,8 @@ static void lpddr1_conf(struct atmel_mpddrc_config *lpddr1)
 	 */
 	lpddr1->rtr = 0x407;
 
-#ifdef CONFIG_TARGET_WB50N
-	/* Timing for MT46H16M32LF (5 & 6) */
-	lpddr1->tpr0 = (6 << ATMEL_MPDDRC_TPR0_TRAS_OFFSET  |
-	                3 << ATMEL_MPDDRC_TPR0_TRCD_OFFSET  |
-	                2 << ATMEL_MPDDRC_TPR0_TWR_OFFSET   |
-	                8 << ATMEL_MPDDRC_TPR0_TRC_OFFSET   |
-	                3 << ATMEL_MPDDRC_TPR0_TRP_OFFSET   |
-	                2 << ATMEL_MPDDRC_TPR0_TRRD_OFFSET  |
-	                2 << ATMEL_MPDDRC_TPR0_TWTR_OFFSET  |
-	                2 << ATMEL_MPDDRC_TPR0_TMRD_OFFSET);
-
-	lpddr1->tpr1 = (1 << ATMEL_MPDDRC_TPR1_TXP_OFFSET   |
-	                0 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |
-	               15 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |
-	               10 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET);
-#else
-	/* Timing for MT29C2G24MAAAAKAMD-5 */
-	lpddr1->tpr0 = (6 << ATMEL_MPDDRC_TPR0_TRAS_OFFSET  |
-	                2 << ATMEL_MPDDRC_TPR0_TRCD_OFFSET  |
-	                2 << ATMEL_MPDDRC_TPR0_TWR_OFFSET   |
-	                8 << ATMEL_MPDDRC_TPR0_TRC_OFFSET   |
-	                2 << ATMEL_MPDDRC_TPR0_TRP_OFFSET   |
-	                2 << ATMEL_MPDDRC_TPR0_TRRD_OFFSET  |
-	                2 << ATMEL_MPDDRC_TPR0_TWTR_OFFSET  |
-	                2 << ATMEL_MPDDRC_TPR0_TMRD_OFFSET);
-
-	lpddr1->tpr1 = (2 << ATMEL_MPDDRC_TPR1_TXP_OFFSET   |
-	                0 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |
-	               15 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |
-	               10 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET);
-#endif
+	lpddr1->tpr0 = LPDDR_TPR0;
+	lpddr1->tpr1 = LPDDR_TPR1;
 
 	lpddr1->tpr2 = (4 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET);
 

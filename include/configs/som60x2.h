@@ -1,11 +1,11 @@
 /*
- * Configuration settings for the SOM60 Module.
+ * Configuration settings for the SOM60x2 Module.
  *
  * SPDX-License-Identifier: GPL-2.0+
  */
 
-#ifndef __SOM60_CONFIG_H
-#define __SOM60_CONFIG_H
+#ifndef __SOM60X2_CONFIG_H
+#define __SOM60X2_CONFIG_H
 
 #include "som6050_common.h"
 
@@ -22,17 +22,17 @@
 		"ubi part ubi;" \
 		"for part in a b; do "									\
 			"ubi create kernel_${part} C00000 static;"			\
-			"ubi create rootfs_${part} 5800000 static;"			\
-			"ubi create rootfs_data_${part} A00000 dynamic;"	\
+			"ubi create rootfs_${part} B000000 static;"			\
+			"ubi create rootfs_data_${part} 1400000 dynamic;"	\
 		"done;" \
 		"ubi create data 1460000 dynamic\0"
 
-/* Timing and sizes for MT29C2G24MAAAAKAMD-5 */
-#define CONFIG_SYS_SDRAM_SIZE           0x8000000
+/* Timing and sizes for MT29C4G48MAYBBAMR-48 */
+#define CONFIG_SYS_SDRAM_SIZE           0x10000000
 
 #define LPDDR_CR \
 	(ATMEL_MPDDRC_CR_NC_COL_10         |\
-	 ATMEL_MPDDRC_CR_NR_ROW_13         |\
+	 ATMEL_MPDDRC_CR_NR_ROW_14         |\
 	 ATMEL_MPDDRC_CR_CAS_DDR_CAS3      |\
 	 ATMEL_MPDDRC_CR_ENRDM_ON          |\
 	 ATMEL_MPDDRC_CR_NDQS_DISABLED     |\

@@ -1,0 +1,113 @@
+/*
+ * at91-som60.dtsi - Device Tree file for the SOM60 module
+ *
+ *  Copyright (C) 2018 Laird,
+ *		  2018 Ben Whitten <ben.whitten@lairdtech.com>
+ *		  2018 Boris Krasnovskiy <boris.krasnovskiy@lairdtech.com>
+ *
+ * Licensed under GPLv2 or later.
+ */
+#include "sama5d36.dtsi"
+
+/ {
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	signature {
+		key-dev {
+			required = "conf";
+			algo = "sha256,rsa2048";
+			key-name-hint = "dev";
+		};
+	};
+
+	/*
+	 * This is a development-only AES128 key passed from U-Boot into
+	 * the kernel for the encrypted file systems; it will be
+	 * replaced in manufacturing with a production key.
+	 */
+	encryption {
+		laird,fs-key = <
+			0xbf4a626e 0x68ddba72 0x36094531 0x15fa806c
+			0x38862932 0x3078d54f 0x0b3e3d9f 0x0adfaae5
+			0xb194f2cd 0x402bc3c6 0x35b7d66c 0xd06c9e8d
+			0xc080cede 0xd8bff74a 0xc16c2cfe 0xeaca5bbf
+				>;
+	};
+
+	ahb {
+		apb {
+			pinctrl@fffff200 {
+				board {
+					pinctrl_nand0_wp: nand0_wp {
+						u-boot,dm-pre-reloc;
+						atmel,pins =
+							<AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
+					};
+				};
+			};
+		};
+	};
+};
+
+&mmc0 {
+	slot@0 {
+		reg = <0>;
+		bus-width = <4>;
+	};
+};
+
+&slow_xtal {
+	clock-frequency = <32768>;
+};
+
+&main_xtal {
+	clock-frequency = <12000000>;
+};
+
+&tcb0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	timer0: timer@0 {
+		compatible = "atmel,tcb-timer";
+		reg = <0>;
+	};
+
+	timer1: timer@1 {
+		compatible = "atmel,tcb-timer";
+		reg = <1>;
+	};
+};
+
+&macb0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	phy-mode = "rgmii";
+};
+
+&macb1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	phy-mode = "rmii";
+};
+
+&nand0 {
+	pinctrl-0 = <&pinctrl_nand0_ale_cle &pinctrl_nand0_wp>;
+	nand-bus-width = <8>;
+	nand-ecc-mode = "hw";
+	atmel,has-pmecc;
+	atmel,pmecc-cap = <8>;
+	atmel,pmecc-sector-size = <512>;
+
+	/*
+	 * Note - nand-on-flash-bbt requires the last 4 blocks on
+	 * flash to be reserved for bad block table.  These blocks
+	 * can be used in partitions only if bbt is not stored on flash.
+	 */
+	nand-on-flash-bbt;
+	status = "okay";
+};
