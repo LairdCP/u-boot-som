@@ -42,7 +42,7 @@ typedef struct at91_pmc {
 	u32	mckr;		/* 0x30 Master Clock Register */
 	u32	reserved1;
 	u32	usb;		/* 0x38 USB Clock Register */
-	u32	reserved2;
+	u32	smd;		/* 0x3C SMD Clock Register */
 	u32	pck[4];		/* 0x40 Programmable Clock Register 0 - 3 */
 	u32	reserved3[4];
 	u32	ier;		/* 0x60 Interrupt Enable Register */
@@ -173,6 +173,8 @@ typedef struct at91_pmc {
 #define		AT91RM9200_PMC_UDP	(1 <<  1)		/* USB Devcice Port Clock [AT91RM9200 only] */
 #define		AT91_PMC_DDR		(1 <<  2)		/* DDR Clock */
 #define		AT91RM9200_PMC_MCKUDP	(1 <<  2)		/* USB Device Port Master Clock Automatic Disable on Suspend [AT91RM9200 only] */
+#define		AT91_PMC_LCD		(1 <<  3)		/* LCD Clock */
+#define		AT91_PMC_SMD		(1 <<  4)		/* SMD Clock */
 #define		AT91RM9200_PMC_UHP	(1 <<  4)		/* USB Host Port Clock [AT91RM9200 only] */
 #define		AT91SAM926x_PMC_UHP	(1 <<  6)		/* USB Host Port Clock [AT91SAM926x only] */
 #define		AT91SAM926x_PMC_UDP	(1 <<  7)		/* USB Devcice Port Clock [AT91SAM926x only] */
@@ -205,6 +207,12 @@ typedef struct at91_pmc {
 #define			AT91_PMC_USBDIV_4		(2 << 28)
 #define		AT91_PMC_USB96M		(1     << 28)		/* Divider by 2 Enable (PLLB only) */
 #define		AT91_PMC_PLLA_WR_ERRATA	(1     << 29)		/* Bit 29 must always be set to 1 when programming the CKGR_PLLAR register */
+
+#define AT91_PMC_SMDS		(0x1UL <<  0)
+#define 	AT91_PMC_SMDS_SMD_PLLA		(0x0UL)
+#define 	AT91_PMC_SMDS_SMD_PLLB		(0x1UL)
+#define AT91_PMC_SMDDIV	(0x1FUL <<  8)
+#define AT91_PMC_SMDDIV_(x)	((x & 0x1F) << 8)
 
 #define		AT91_PMC_CSS		(3 <<  0)		/* Master Clock Selection */
 #define			AT91_PMC_CSS_SLOW		(0 << 0)

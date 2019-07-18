@@ -7,6 +7,7 @@
  */
 
 #include <common.h>
+#include <environment.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
@@ -40,30 +41,6 @@ struct key_prop {
 	const void *iv;
 };
 #endif
-
-static void at91sama5d3_slowclock_init(void)
-{
-	/*
-	 * On AT91SAMA5D3 CPUs, the slow clock can be based on an
-	 * internal imprecise RC oscillator or an external 32 kHz oscillator.
-	 * Switch to the latter.
-	 */
-	unsigned tmp;
-	ulong *reg = (ulong *)ATMEL_BASE_SCKCR;
-
-	tmp = readl(reg);
-	if ((tmp & AT91SAM9G45_SCKCR_OSCSEL) == AT91SAM9G45_SCKCR_OSCSEL_RC) {
-		tmp &= ~AT91SAM9G45_SCKCR_OSC32EN;
-		tmp |= AT91SAM9G45_SCKCR_OSC32BYP;
-		writel(tmp, reg);
-		udelay(200);
-		tmp |= AT91SAM9G45_SCKCR_OSCSEL_32;
-		writel(tmp, reg);
-		udelay(200);
-		tmp &= ~AT91SAM9G45_SCKCR_RCEN;
-		writel(tmp, reg);
-	}
-}
 
 /* Configures NAND controller from the timing table supplied */
 int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
@@ -345,7 +322,7 @@ int board_late_init(void)
 
 	env_set("lrd_name", name);
 
-#if defined(CONFIG_TARGET_SOM60) || defined (CONFIG_TARGET_WB50)
+#ifndef CONFIG_TARGET_IG60
 	if (gd->flags & GD_FLG_ENV_DEFAULT) {
 		puts("Saving default environment...\n");
 		env_save();
@@ -377,9 +354,7 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 
-	at91sama5d3_slowclock_init();
-
-#if defined(CONFIG_NAND)
+#ifdef CONFIG_NAND
 	at91_periph_clk_enable(ATMEL_ID_SMC);
 
 	/* Disable Flash Write Protect discrete */
@@ -422,6 +397,56 @@ int dram_init(void)
 
 /* SPL */
 #ifdef CONFIG_SPL_BUILD
+void at91_disable_smd_clock(void)
+{
+	struct at91_pmc *pmc = (struct at91_pmc *)ATMEL_BASE_PMC;
+
+	/*
+	 * Set pin DIBP to pull-up and DIBN to pull-down
+	 * to save power on VDDIOP0
+	 */
+	at91_system_clk_enable(AT91_PMC_SMD);
+	writel(AT91_PMC_SMDDIV, &pmc->smd);
+	at91_periph_clk_enable(ATMEL_ID_SMD);
+
+	writel(0xE, (0x0C + ATMEL_BASE_SMD));
+
+	at91_periph_clk_disable(ATMEL_ID_SMD);
+	at91_system_clk_disable(AT91_PMC_SMD);
+}
+
+static void at91sama5d3_slowclock_init(void)
+{
+	/*
+	 * On AT91SAMA5D3 CPUs, the slow clock can be based on an
+	 * internal imprecise RC oscillator or an external 32 kHz oscillator.
+	 * Switch to the latter.
+	 */
+	static const ulong *reg = (ulong *)ATMEL_BASE_SCKCR;
+	unsigned tmp;
+
+	tmp = readl(reg);
+	if ((tmp & AT91SAM9G45_SCKCR_OSCSEL) == AT91SAM9G45_SCKCR_OSCSEL_RC) {
+		tmp |= AT91SAM9G45_SCKCR_OSC32EN;
+		writel(tmp, reg);
+
+		tmp = readl(reg);
+		tmp &= ~AT91SAM9G45_SCKCR_OSC32EN;
+		tmp |= AT91SAM9G45_SCKCR_OSC32BYP;
+		writel(tmp, reg);
+
+		tmp = readl(reg);
+		tmp |= AT91SAM9G45_SCKCR_OSCSEL_32;
+		writel(tmp, reg);
+
+		udelay(153);
+
+		tmp = readl(reg);
+		tmp &= ~AT91SAM9G45_SCKCR_RCEN;
+		writel(tmp, reg);
+	}
+}
+
 void spl_board_init(void)
 {
 #ifdef CONFIG_NAND_BOOT
@@ -432,6 +457,10 @@ void spl_board_init(void)
 	conf = nand_get_default_data_interface();
 	atmel_setup_data_interface(NULL, 1, conf);
 #endif
+
+	at91_disable_smd_clock();
+
+	at91sama5d3_slowclock_init();
 }
 
 #ifdef CONFIG_SPL_LOAD_FIT
