@@ -201,6 +201,24 @@ static int at91_i2c_enable_clk(struct udevice *dev)
 	return 0;
 }
 
+static int at91_i2c_disable_clk(struct udevice *dev)
+{
+	struct clk clk;
+	int ret;
+
+	ret = clk_get_by_index(dev, 0, &clk);
+	if (ret)
+		return -EINVAL;
+
+	ret = clk_disable(&clk);
+	if (ret)
+		return ret;
+
+	clk_free(&clk);
+
+	return 0;
+}
+
 static int at91_i2c_set_bus_speed(struct udevice *dev, unsigned int speed)
 {
 	struct at91_i2c_bus *bus = dev_get_priv(dev);
@@ -262,12 +280,12 @@ static int at91_i2c_probe(struct udevice *dev)
 
 static int at91_i2c_remove(struct udevice *dev)
 {
-	struct clk clk;
-	int ret;
+	struct at91_i2c_bus *bus = dev_get_priv(dev);
+	struct at91_i2c_regs *reg = bus->regs;
 
-	ret = clk_get_by_index(dev, 0, &clk);
-	if (!ret)
-		clk_disable(&clk);
+	writel(TWI_CR_SWRST, &reg->cr);
+
+	at91_i2c_disable_clk(dev);
 
 	return 0;
 }

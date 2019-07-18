@@ -291,6 +291,9 @@ int hw_sha_finish(struct hash_algo *algo, void *ctx, void *dest_buf,
 
 	free(ctx);
 
+	/* Reset the SHA engine */
+	writel(ATMEL_HASH_CR_SWRST, &sha->cr);
+
 	at91_periph_clk_disable(ATMEL_ID_SHA);
 
 	return 0;
