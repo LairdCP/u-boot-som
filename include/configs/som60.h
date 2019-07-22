@@ -25,7 +25,7 @@
 			"ubi create rootfs_${part} 5800000 dynamic;" \
 			"ubi create rootfs_data_${part} A00000 dynamic;" \
 		"done;" \
-		"ubi create perm 1460000 dynamic\0"
+		"ubi create perm 1439000 dynamic\0"
 
 /* Timing and sizes for MT29C2G24MAAAAKAMD-5 */
 #define CONFIG_SYS_SDRAM_SIZE           0x8000000
