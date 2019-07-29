@@ -555,18 +555,10 @@ void mem_init(void)
 
 void at91_pmc_init(void)
 {
-	u32 tmp;
-
-	tmp = AT91_PMC_PLLAR_29 |
-	      AT91_PMC_PLLXR_PLLCOUNT(0x3f) |
-	      AT91_PMC_PLLXR_MUL(43) |
-	      AT91_PMC_PLLXR_DIV(1);
-	at91_plla_init(tmp);
+	at91_plla_init(BOARD_PLLA_SETTINGS);
 
 	at91_pllicpr_init(AT91_PMC_IPLL_PLLA(0x3));
 
-	tmp = AT91_PMC_MCKR_MDIV_4 |
-	      AT91_PMC_MCKR_CSS_PLLA;
-	at91_mck_init(tmp);
+	at91_mck_init(BOARD_PRESCALER_PLLA);
 }
 #endif

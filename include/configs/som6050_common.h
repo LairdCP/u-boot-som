@@ -13,6 +13,16 @@
 #define CONFIG_SYS_AT91_SLOW_CLOCK      32768
 #define CONFIG_SYS_AT91_MAIN_CLOCK      12000000 /* from 12 MHz crystal */
 
+/* PCK = 528MHz, MCK = 132MHz */
+#define BOARD_PLLA_SETTINGS (\
+	AT91_PMC_PLLAR_29 |\
+	AT91_PMC_PLLXR_PLLCOUNT(0x3f) |\
+	AT91_PMC_PLLXR_MUL(43) |\
+	AT91_PMC_PLLXR_DIV(1))
+
+#define BOARD_PRESCALER_PLLA \
+	(AT91_PMC_MCKR_MDIV_4 | AT91_PMC_MCKR_CSS_PLLA)
+
 #define CONFIG_ARCH_CPU_INIT
 
 #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
@@ -127,6 +137,16 @@
 #if !defined(CONFIG_SPL_BUILD)
 #define CONFIG_HW_WATCHDOG
 #endif
+
+#define DEFAULT_ENV_SETTINGS \
+	"autoload=no\0" \
+	"autostart=no\0" \
+	"bootside=a\0" \
+	"_setbootvol=if test ${bootside} = a; then " \
+		"setenv bootvol 1;" \
+	"else " \
+		"setenv bootvol 4;" \
+	"fi\0"
 
 #ifndef __ASSEMBLY__
 /* Define hook for custom board initialization */
