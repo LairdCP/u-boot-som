@@ -12,15 +12,7 @@
 
 /* Customize IG60 settings only */
 #undef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS \
-	"autoload=no\0" \
-	"autostart=no\0" \
-	"bootside=a\0" \
-	"_setbootvol=if test ${bootside} = a; then " \
-		"setenv bootvol 1;" \
-	"else " \
-		"setenv bootvol 4;" \
-	"fi\0" \
+#define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
 	"_formatubi=nand erase.part ubi;" \
 		"ubi part ubi;" \
 		"for part in a b; do " \
