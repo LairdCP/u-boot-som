@@ -24,7 +24,7 @@ CONFIG_BOOTDELAY=3
 CONFIG_USE_BOOTARGS=y
 CONFIG_BOOTARGS="rw root=/dev/mmcblk0p3 resume=/dev/mmcblk0p2 rootwait resumewait loglevel=4"
 CONFIG_USE_BOOTCOMMAND=y
-CONFIG_BOOTCOMMAND="fatload mmc 0 0x21000000 kernel.itb; bootm"
+CONFIG_BOOTCOMMAND="setenv bootargs ${bootargs} fips=${fips:=0} fips_wifi=${fips_wifi:=0}; fatload mmc 0 0x21000000 kernel.itb; bootm"
 # CONFIG_DISPLAY_BOARDINFO is not set
 CONFIG_SPL=y
 # CONFIG_SPL_RAW_IMAGE_SUPPORT is not set
