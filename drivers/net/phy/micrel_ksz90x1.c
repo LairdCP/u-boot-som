@@ -171,6 +171,9 @@ static int ksz9031_of_config(struct phy_device *phydev)
 	};
 	int i, ret = 0;
 
+	if (dev_read_bool(phydev, "ksz9031_ignore_skew"))
+		return;
+
 	for (i = 0; i < ARRAY_SIZE(ofcfg); i++) {
 		ret = ksz90x1_of_config_group(phydev, &(ofcfg[i]));
 		if (ret)
