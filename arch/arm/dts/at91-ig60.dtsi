@@ -63,6 +63,17 @@
 
 	ethernet-phy@7 {
 		reg = <7>;
+
+		ksz9031_ignore_skew;
+
+		txen-skew-ps = <800>;
+		txc-skew-ps = <3000>;
+		rxdv-skew-ps = <400>;
+		rxc-skew-ps = <3000>;
+		rxd0-skew-ps = <400>;
+		rxd1-skew-ps = <400>;
+		rxd2-skew-ps = <400>;
+		rxd3-skew-ps = <400>;
 	};
 };
 
