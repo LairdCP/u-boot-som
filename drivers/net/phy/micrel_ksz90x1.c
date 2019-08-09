@@ -152,6 +152,14 @@ static int ksz9021_of_config(struct phy_device *phydev)
 	};
 	int i, ret = 0;
 
+	if (dev_read_bool(phydev->dev, "ksz9021,rgmii_2.0_timing")) {
+		struct phy_driver *drv = phydev->drv;
+
+		drv->writeext(phydev, 0, 0, MII_KSZ9021_EXT_RGMII_CLOCK_SKEW, 0xf0f0);
+		drv->writeext(phydev, 0, 0, MII_KSZ9021_EXT_RGMII_RX_DATA_SKEW, 0);
+		drv->writeext(phydev, 0, 0, MII_KSZ9021_EXT_RGMII_TX_DATA_SKEW, 0);
+	}
+
 	for (i = 0; i < ARRAY_SIZE(ofcfg); i++) {
 		ret = ksz90x1_of_config_group(phydev, &(ofcfg[i]));
 		if (ret)
@@ -170,9 +178,6 @@ static int ksz9031_of_config(struct phy_device *phydev)
 		{ MII_KSZ9031_EXT_RGMII_CLOCK_SKEW, 2, ksz9031_clk_grp, 2 },
 	};
 	int i, ret = 0;
-
-	if (dev_read_bool(phydev, "ksz9031_ignore_skew"))
-		return;
 
 	for (i = 0; i < ARRAY_SIZE(ofcfg); i++) {
 		ret = ksz90x1_of_config_group(phydev, &(ofcfg[i]));

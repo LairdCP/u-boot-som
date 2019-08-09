@@ -61,28 +61,12 @@
 &macb0 {
 	status = "okay";
 
-	ethernet-phy@7 {
-		reg = <7>;
-
-		ksz9031_ignore_skew;
-
-		txen-skew-ps = <800>;
-		txc-skew-ps = <3000>;
-		rxdv-skew-ps = <400>;
-		rxc-skew-ps = <3000>;
-		rxd0-skew-ps = <400>;
-		rxd1-skew-ps = <400>;
-		rxd2-skew-ps = <400>;
-		rxd3-skew-ps = <400>;
-	};
+	/* MDIO bus nodes are not supported yet by u-boot */
+	ksz9021,rgmii_2.0_timing;
 };
 
 &macb1 {
 	status = "okay";
-
-	ethernet-phy@1 {
-		reg = <1>;
-	};
 };
 
 &dbgu {
