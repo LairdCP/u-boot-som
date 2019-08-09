@@ -72,6 +72,18 @@
 #define RMII_CLK_OUT_ENABLE_WIDTH	(1)
 #define RMII_CLK_OUT_ENABLE_MASK	(0x10)
 
+/* GPIO Page Register 13G */
+#define MSCC_PHY_CLKOUT_CNTL		13
+#define MSCC_CLKOUT_EN			(1)
+#define MSCC_CLKOUT_EN_WIDTH		(1)
+#define MSCC_CLKOUT_EN_POS		(15)
+#define MSCC_CLKOUT_FREQ_MASK		(0x6000)
+#define MSCC_CLKOUT_FREQ_25_MHZ		(0)
+#define MSCC_CLKOUT_FREQ_50_MHZ		(1)
+#define MSCC_CLKOUT_FREQ_125_MHZ	(2)
+#define MSCC_CLKOUT_FREQ_WIDTH		(2)
+#define MSCC_CLKOUT_FREQ_POS		(13)
+
 /* Token Ring Page 0x52B5 Registers */
 #define MSCC_PHY_REG_TR_ADDR_16		16
 #define MSCC_PHY_REG_TR_DATA_17		17
@@ -368,6 +380,17 @@ static int vsc8531_config(struct phy_device *phydev)
 	}
 	/* Default RMII Clk Output to 0=OFF/1=ON  */
 	rmii_clk_out = 0;
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MSCC_EXT_PAGE_ACCESS,
+		  MSCC_PHY_PAGE_GPIO);
+
+	reg_val = phy_read(phydev, MDIO_DEVAD_NONE, MSCC_PHY_CLKOUT_CNTL);
+
+	reg_val = bitfield_replace(reg_val, MSCC_CLKOUT_FREQ_POS,
+				   MSCC_CLKOUT_FREQ_WIDTH,
+				   MSCC_CLKOUT_FREQ_125_MHZ);
+
+	phy_write(phydev, MDIO_DEVAD_NONE, MSCC_PHY_CLKOUT_CNTL, reg_val);
 
 	phy_write(phydev, MDIO_DEVAD_NONE, MSCC_EXT_PAGE_ACCESS,
 		  MSCC_PHY_PAGE_EXT2);
