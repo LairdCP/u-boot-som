@@ -9,6 +9,7 @@
 #include "dumpimage.h"
 #include <image.h>
 #include <version.h>
+#include <linux/libfdt.h>
 
 static void usage(void);
 
@@ -25,6 +26,16 @@ static off_t get_ubi_data_size(const char *devname)
 	FILE *file;
 	off_t res = 0;
 	char path[256];
+
+	snprintf(path, sizeof(path), UBI_SYSFS "%s/type", devname + 4);
+	file = fopen(path, "r");
+	if (file) {
+		fgets(path, 20, file);
+		fclose(file);
+
+		if (strcmp(path, "static"))
+			return 0;
+	}
 
 	snprintf(path, sizeof(path), UBI_SYSFS "%s/data_bytes", devname + 4);
 
@@ -171,6 +182,19 @@ int main(int argc, char **argv)
 			memset(&sbuf, 0, sizeof(sbuf));
 			sbuf.st_size = get_ubi_data_size(params.imagefile);
 			sbuf.st_mode = S_IFREG;
+
+			if (!sbuf.st_size) {
+				fdt32_t fdt[2];
+
+				retval = read(ifd, fdt, sizeof(fdt));
+				if (retval < 0 || fdt_magic(fdt) != FDT_MAGIC) {
+					fprintf(stderr, "%s: Can't stat \"%s\"\n",
+						params.cmdname, params.imagefile);
+					goto fail;
+				}
+				sbuf.st_size = fdt_totalsize(fdt);
+				lseek(ifd, 0, SEEK_SET);
+			}
 		} else if (fstat(ifd, &sbuf) < 0) {
 			fprintf(stderr, "%s: Can't stat \"%s\": %s\n",
 				params.cmdname, params.imagefile,
