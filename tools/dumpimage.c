@@ -25,15 +25,15 @@ static off_t get_ubi_data_size(const char *devname)
 {
 	FILE *file;
 	off_t res = 0;
-	char path[256];
+	char *type, path[256];
 
 	snprintf(path, sizeof(path), UBI_SYSFS "%s/type", devname + 4);
 	file = fopen(path, "r");
 	if (file) {
-		fgets(path, 20, file);
+		type = fgets(path, 20, file);
 		fclose(file);
 
-		if (strcmp(path, "static"))
+		if (!type || strcmp(type, "static"))
 			return 0;
 	}
 

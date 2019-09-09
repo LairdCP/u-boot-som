@@ -125,9 +125,116 @@ static unsigned char obsolete_flag = 0;
 #define DEFAULT_ENV_INSTANCE_STATIC
 #include <env_default.h>
 
+#define MTD_DEV_START "/dev/mtd"
+#define MTD_SYSFS "/sys/class/mtd"
+#define MTD_VOL_NAME_PATT "mtd%d"
+
 #define UBI_DEV_START "/dev/ubi"
 #define UBI_SYSFS "/sys/class/ubi"
 #define UBI_VOL_NAME_PATT "ubi%d_%d"
+
+static int is_mtd_devname(const char *devname)
+{
+	return !strncmp(devname, MTD_DEV_START ":", sizeof(MTD_DEV_START));
+}
+
+static int mtd_check_volume_sysfs_name(const char *volume_sysfs_name,
+				       const char *volname)
+{
+	char path[256];
+	FILE *file;
+	char *name;
+
+	snprintf(path, sizeof(path), MTD_SYSFS "/%s/name", volume_sysfs_name);
+
+	file = fopen(path, "r");
+	if (!file)
+		return -1;
+
+	name = fgets(path, sizeof(path), file);
+	fclose(file);
+
+	if (!name) {
+		fprintf(stderr,
+			"Failed to read from file %s, err = %d\n", path, errno);
+		return -1;
+	}
+
+	return strcmp(name, volname) ? -1 : 0;
+}
+
+static int mtd_get_volnum_by_name(const char *volname)
+{
+	DIR *sysfs_mtd;
+	struct dirent *dirent;
+	int volnum;
+
+	sysfs_mtd = opendir(MTD_SYSFS);
+	if (!sysfs_mtd)
+		return -1;
+
+#ifdef DEBUG
+	fprintf(stderr, "Looking for volume name \"%s\"\n", volname);
+#endif
+
+	for (;;) {
+		dirent = readdir(sysfs_mtd);
+		if (!dirent)
+			break;
+
+		if (sscanf(dirent->d_name, MTD_VOL_NAME_PATT, &volnum) != 1)
+			continue;
+
+		if (!mtd_check_volume_sysfs_name(dirent->d_name, volname))
+			return volnum;
+	}
+
+	return -1;
+}
+
+static const char *mtd_get_volume_devname(const char *volname)
+{
+	char *volume_devname;
+	int volnum;
+	int ret;
+
+	volnum = mtd_get_volnum_by_name(volname);
+	if (volnum < 0)
+		return NULL;
+
+	ret = asprintf(&volume_devname, MTD_DEV_START "%d", volnum);
+	if (ret < 0)
+		return NULL;
+
+#ifdef DEBUG
+	fprintf(stderr, "Found mtd volume \"%s\" -> %s\n",
+		volname, volume_devname);
+#endif
+
+	return volume_devname;
+}
+
+static void mtd_check_dev(unsigned int dev_id)
+{
+	const char *devname = DEVNAME(dev_id);
+	const char *volname, *volume_devname;
+
+	if (!is_mtd_devname(devname))
+		return;
+
+	volname = devname + sizeof(MTD_DEV_START);
+
+	/* Let's find real volume device name */
+	volume_devname = mtd_get_volume_devname(volname);
+	if (!volume_devname) {
+		fprintf(stderr, "Couldn't find mtd volume \"%s\"\n",
+			volname);
+		return;
+	}
+
+	free((char*) devname);
+	DEVNAME(dev_id) = volume_devname;
+}
 
 static int is_ubi_devname(const char *devname)
 {
@@ -1513,6 +1620,8 @@ static int check_device_config(int dev)
 	struct stat st;
 	int32_t lnum = 0;
 	int fd, rc = 0;
+
+	mtd_check_dev(dev);
 
 	/* Fills in IS_UBI(), converts DEVNAME() with ubi volume name */
 	ubi_check_dev(dev);
