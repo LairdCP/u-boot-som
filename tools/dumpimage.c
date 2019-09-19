@@ -33,7 +33,11 @@ static off_t get_ubi_data_size(const char *devname)
 		type = fgets(path, 20, file);
 		fclose(file);
 
-		if (!type || strcmp(type, "static"))
+		if (!type)
+			return 0;
+
+		type[strcspn(type, "\n")] = 0;
+		 if(strcmp(type, "static"))
 			return 0;
 	}
 

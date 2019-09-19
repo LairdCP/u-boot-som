@@ -160,6 +160,7 @@ static int mtd_check_volume_sysfs_name(const char *volume_sysfs_name,
 		return -1;
 	}
 
+	name[strcspn(name, "\n")] = 0;
 	return strcmp(name, volname) ? -1 : 0;
 }
 
