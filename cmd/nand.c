@@ -357,17 +357,26 @@ static void adjust_size_for_badblocks(loff_t *size, loff_t offset, int dev)
 	struct mtd_info *mtd = get_nand_dev_by_index(dev);
 	loff_t maxoffset = offset + *size;
 	int badblocks = 0;
+	int badblocks_bbt = 0;
 
 	/* count badblocks in NAND from offset to offset + size */
 	for (; offset < maxoffset; offset += mtd->erasesize) {
-		if (nand_block_isbad(mtd, offset))
+		if (nand_block_isbad(mtd, offset)) {
 			badblocks++;
+			/* Blocks containing the bad block table are reported
+			 * as bad to protect the table, but actually marked
+			 * reserved.  Check for that condition so as not
+			 * to inadvertently alarm a user.
+			 */
+			if (nand_block_isreserved(mtd, offset))
+				badblocks_bbt++;
+		}
 	}
 	/* adjust size if any bad blocks found */
 	if (badblocks) {
 		*size -= badblocks * mtd->erasesize;
-		printf("size adjusted to 0x%llx (%d bad blocks)\n",
-		       (unsigned long long)*size, badblocks);
+		printf("size adjusted to 0x%llx (%d BBT blocks, %d bad blocks)\n",
+		       (unsigned long long)*size, badblocks_bbt, badblocks - badblocks_bbt);
 	}
 }
 
@@ -444,9 +453,21 @@ static int do_nand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 
 	if (strcmp(cmd, "bad") == 0) {
 		printf("\nDevice %d bad blocks:\n", dev);
-		for (off = 0; off < mtd->size; off += mtd->erasesize)
-			if (nand_block_isbad(mtd, off))
-				printf("  %08llx\n", (unsigned long long)off);
+		for (off = 0; off < mtd->size; off += mtd->erasesize) {
+			if (nand_block_isbad(mtd, off)) {
+				/* Laird
+				 * Blocks that are used to contain the on-flash
+				 * BBT are marked as reserved in the in-RAM table
+				 * and reported as bad in the bad block check
+				 * to protect the table.
+				 * Confirm that blocks are really bad before
+				 * reporting them as such, by checking to
+				 * see if they are actually marked as reserved.
+				 */
+				if (!nand_block_isreserved(mtd, off))
+					printf("  %08llx\n", (unsigned long long)off);
+			}
+		}
 		return 0;
 	}
 

@@ -60,6 +60,7 @@ int nand_erase_opts(struct mtd_info *mtd,
 	const char *mtd_device = mtd->name;
 	struct mtd_oob_ops oob_opts;
 	struct nand_chip *chip = mtd_to_nand(mtd);
+	int skipping_block;
 
 	if ((opts->offset & (mtd->erasesize - 1)) != 0) {
 		printf("Attempt to erase non block-aligned data\n");
@@ -101,7 +102,7 @@ int nand_erase_opts(struct mtd_info *mtd,
 	     erase.addr += mtd->erasesize) {
 
 		WATCHDOG_RESET();
-
+		skipping_block = 0;
 		if (opts->lim && (erase.addr >= (opts->offset + opts->lim))) {
 			puts("Size of erase exceeds limit\n");
 			return -EFBIG;
@@ -109,16 +110,29 @@ int nand_erase_opts(struct mtd_info *mtd,
 		if (!opts->scrub) {
 			int ret = mtd_block_isbad(mtd, erase.addr);
 			if (ret > 0) {
-				if (!opts->quiet)
-					printf("\rSkipping bad block at  "
+				if (!opts->quiet) {
+					const char * str;
+					/* Blocks containing the BBT are not actually
+					 * bad.  They are marked Reserved and reported
+					 * Bad in order to protect them from erasure.
+					 * Report them as such...
+					 */
+					if (mtd_block_isreserved(mtd, erase.addr))
+						str = "BBT";
+					else
+						str = "bad";
+
+					skipping_block = 1;
+					printf("\rSkipping %s block at  "
 					       "0x%08llx                 "
 					       "                         \n",
-					       erase.addr);
+					       str, erase.addr);
+				}
 
 				if (!opts->spread)
 					erased_length++;
 
-				continue;
+				goto show_output;
 
 			} else if (ret < 0) {
 				printf("\n%s: MTD get bad block failed: %d\n",
@@ -153,7 +167,7 @@ int nand_erase_opts(struct mtd_info *mtd,
 				continue;
 			}
 		}
-
+show_output:
 		if (!opts->quiet) {
 			unsigned long long n = erased_length * 100ULL;
 			int percent;
@@ -168,10 +182,11 @@ int nand_erase_opts(struct mtd_info *mtd,
 			if (percent != percent_complete) {
 				percent_complete = percent;
 
-				printf("\rErasing at 0x%llx -- %3d%% complete.",
+				printf("\r%s at 0x%llx -- %3d%% complete.",
+				       skipping_block ? "Skipping" : "Erasing",
 				       erase.addr, percent);
 
-				if (opts->jffs2 && result == 0)
+				if (!skipping_block && opts->jffs2)
 					printf(" Cleanmarker written at 0x%llx.",
 					       erase.addr);
 			}
