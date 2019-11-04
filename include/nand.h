@@ -62,6 +62,11 @@ static inline int nand_block_isbad(struct mtd_info *info, loff_t ofs)
 	return mtd_block_isbad(info, ofs);
 }
 
+static inline int nand_block_isreserved(struct mtd_info *info, loff_t ofs)
+{
+	return mtd_block_isreserved(info, ofs);
+}
+
 static inline int nand_erase(struct mtd_info *info, loff_t off, size_t size)
 {
 	struct erase_info instr;
