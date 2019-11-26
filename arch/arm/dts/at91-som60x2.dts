@@ -2,7 +2,7 @@
  * at91-som60x2.dts - Device Tree file for the DVK SOM60 x2 board
  *
  *  Copyright (C) 2019 Laird,
- *		  2018 Boris Krasnovskiy <boris.krasnovskiy@lairdtech.com>
+ *		  2018 Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
  *
  * Licensed under GPLv2 or later.
  */

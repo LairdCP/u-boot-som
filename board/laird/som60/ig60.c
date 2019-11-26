@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2018 Laird
- * Don Ferencz <donald.ferencz@lairdtech.com>
+ * Don Ferencz <donald.ferencz@lairdconnect.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
