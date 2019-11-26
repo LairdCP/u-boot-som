@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2018 Laird
- * 	Ben Whitten <ben.whitten@lairdtech.com>
- * 	Boris Krasnovskiy <boris.krasnovskiy@lairdtech.com>
+ * 	Ben Whitten <ben.whitten@lairdconnect.com>
+ * 	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */

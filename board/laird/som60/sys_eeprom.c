@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2018 Laird
- *      Boris Krasnovskiy <boris.krasnovskiy@lairdtech.com>
+ *      Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
