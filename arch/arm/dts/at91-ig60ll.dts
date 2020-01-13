@@ -16,45 +16,8 @@
 	model = "Laird IG60 LL";
 	compatible = "laird,ig60ll", "laird,som60x2", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
 
-	chosen {
-		stdout-path = "serial2:115200n8";
-	};
-
-	ahb {
-		apb {
-
-			pinctrl@fffff200 {
-				usart1 {
-					u-boot,dm-pre-reloc;
-					pinctrl_usart1: usart1-0 {
-						u-boot,dm-pre-reloc;
-					};
-				};
-
-				board {
-					pinctrl_usart1_en: usuart1_en {
-						u-boot,dm-pre-reloc;
-						atmel,pins =
-						<AT91_PIOA 22 AT91_PERIPH_A AT91_PINCTRL_PULL_UP
-						AT91_PIOA 28 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;
-					};
-				};
-			};
-		};
-	};
 };
 
 &mmc0 {
 	u-boot,dm-pre-reloc;
-};
-
-&usart1_clk {
-	u-boot,dm-pre-reloc;
-};
-
-&usart1 {
-	u-boot,dm-pre-reloc;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usart1 &pinctrl_usart1_en>;
-	status = "okay";
 };
