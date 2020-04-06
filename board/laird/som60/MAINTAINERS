@@ -1,6 +1,9 @@
-SOM60 MODULE
-M:	Ben Whitten <ben.whitten@lairdconnect.com>
+SOM60/WB50 MODULE
+M:	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
 S:	Maintained
 F:	board/laird/som60/
+F:	include/configs/som6050_common.h
 F:	include/configs/som60.h
+F:	include/configs/wb50.h
 F:	configs/som60_defconfig
+F:	configs/wb50_defconfig
