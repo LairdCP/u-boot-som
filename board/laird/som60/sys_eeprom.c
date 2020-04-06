@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Laird
+ * Copyright (C) 2018 Laird Connectivity
  *      Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+

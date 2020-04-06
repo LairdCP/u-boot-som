@@ -7,7 +7,7 @@
 #ifndef __SOM6050_CONFIG_H
 #define __SOM6050_CONFIG_H
 
-#define CONFIG_SYS_TEXT_BASE            0x26f00000
+#define CONFIG_SYS_TEXT_BASE            0x21000000
 
 /* ARM asynchronous clock */
 #define CONFIG_SYS_AT91_SLOW_CLOCK      32768
@@ -33,6 +33,7 @@
 #endif
 
 #define CONFIG_ENV_VARS_UBOOT_CONFIG
+#define CONFIG_DISABLE_IMAGE_LEGACY
 
 /*
  * BOOTP options
@@ -88,7 +89,7 @@
 #define CONFIG_PMECC_CAP                8
 #define CONFIG_PMECC_SECTOR_SIZE        512
 
-#define CONFIG_SYS_LOAD_ADDR            0x21000000 /* load address */
+#define CONFIG_SYS_LOAD_ADDR            0x20200000 /* load address */
 
 /* SPL */
 #define CONFIG_SPL_FRAMEWORK
@@ -110,7 +111,6 @@
 
 #define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION	1
 #define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"u-boot.itb"
-#define CONFIG_SYS_MONITOR_LEN          (512 << 10)
 
 #elif CONFIG_NAND_BOOT
 
@@ -118,9 +118,9 @@
 #define CONFIG_SPL_NAND_BASE
 #define CONFIG_SPL_NAND_IDENT
 
-#define CONFIG_SYS_MONITOR_LEN          (1024 << 10)
-
 #endif
+
+#define CONFIG_SYS_MONITOR_LEN          (512 * 1024) /* max u-boot size */
 
 #define CONFIG_SYS_NAND_5_ADDR_CYCLE
 #define CONFIG_SYS_NAND_PAGE_SIZE       0x800
@@ -141,12 +141,7 @@
 #define DEFAULT_ENV_SETTINGS \
 	"autoload=no\0" \
 	"autostart=no\0" \
-	"bootside=a\0" \
-	"_setbootvol=if test ${bootside} = a; then " \
-		"setenv bootvol 1;" \
-	"else " \
-		"setenv bootvol 4;" \
-	"fi\0"
+	"bootside=a\0"
 
 #ifndef __ASSEMBLY__
 /* Define hook for custom board initialization */

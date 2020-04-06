@@ -10,6 +10,9 @@
 /* The IG60 inherits most of the SOM60 configuration */
 #include "som60x2.h"
 
+#undef CONFIG_SYS_TEXT_BASE
+#define CONFIG_SYS_TEXT_BASE            0x26f00000
+
 /* Customize IG60 settings only */
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
@@ -33,9 +36,5 @@
 #undef CONFIG_ENV_OFFSET_REDUND
 #define CONFIG_ENV_OFFSET               0xA0000
 #define CONFIG_ENV_OFFSET_REDUND        0xC0000
-
-/* SPL */
-#undef CONFIG_SYS_MONITOR_LEN
-#define CONFIG_SYS_MONITOR_LEN          (512 << 10)
 
 #endif

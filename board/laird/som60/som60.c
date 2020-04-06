@@ -301,15 +301,15 @@ void som60_fs_key_inject(void)
 	}
 
 	memcpy(key, fs_key, fs_key_len);
-
-	return;
 }
 #endif
 
+#ifdef CONFIG_DEBUG_UART_BOARD_INIT
 void board_debug_uart_init(void)
 {
 	at91_seriald_hw_init();
 }
+#endif
 
 int board_late_init(void)
 {
