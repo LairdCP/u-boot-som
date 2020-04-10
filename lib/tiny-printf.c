@@ -247,6 +247,7 @@ static int _vprintf(struct printf_info *info, const char *fmt, va_list va)
 				goto abort;
 			case 'u':
 			case 'd':
+			case 'i':
 				div = 1000000000;
 				if (islong) {
 					num = va_arg(va, unsigned long);
@@ -256,7 +257,7 @@ static int _vprintf(struct printf_info *info, const char *fmt, va_list va)
 					num = va_arg(va, unsigned int);
 				}
 
-				if (ch == 'd') {
+				if (ch != 'u') {
 					if (islong && (long)num < 0) {
 						num = -(long)num;
 						out(info, '-');
