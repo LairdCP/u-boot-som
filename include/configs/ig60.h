@@ -13,6 +13,13 @@
 #undef CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_TEXT_BASE            0x26f00000
 
+/*
+ * DO NOT CHANGE - The IG60 must use the legacy load address
+ * since the boot command does not specify an address in bootm
+ */
+#undef CONFIG_SYS_LOAD_ADDR
+#define CONFIG_SYS_LOAD_ADDR		0x21000000
+
 /* Customize IG60 settings only */
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
