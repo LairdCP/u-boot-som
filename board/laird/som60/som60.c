@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Laird
+ * Copyright (C) 2018 Laird Connectivity
  * 	Ben Whitten <ben.whitten@lairdconnect.com>
  * 	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
  *
@@ -313,6 +313,7 @@ void board_debug_uart_init(void)
 
 int board_late_init(void)
 {
+#ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 	char name[32], *p;
 
 	snprintf(name, sizeof(name), "%s%s", get_cpu_name(), CONFIG_LOCALVERSION);
@@ -321,6 +322,7 @@ int board_late_init(void)
 		*p = tolower(*p);
 
 	env_set("lrd_name", name);
+#endif
 
 #ifndef CONFIG_TARGET_IG60
 	if (gd->flags & GD_FLG_ENV_DEFAULT) {

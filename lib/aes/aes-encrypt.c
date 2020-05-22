@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Laird.
+ * Copyright (c) 2018, Laird Connectivity
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
