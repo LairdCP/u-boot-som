@@ -102,7 +102,7 @@
 #ifdef CONFIG_I2C_EEPROM
 
 #define CONFIG_ID_EEPROM
-#define CONFIG_SYS_I2C_MAC_OFFSET 0
+#define CONFIG_SYS_I2C_MAC_OFFSET       0
 
 #endif
 
@@ -118,6 +118,9 @@
 #define CONFIG_SPL_NAND_IDENT
 
 #endif
+
+#define CONFIG_USBNET_DEV_ADDR          "de:ad:be:ef:00:01"
+#define CONFIG_USBNET_HOST_ADDR         "de:ad:be:ef:00:02"
 
 #define CONFIG_SYS_MONITOR_LEN          (512 * 1024) /* max u-boot size */
 
