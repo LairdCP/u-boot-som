@@ -10,8 +10,10 @@
 /* The IG60 inherits most of the SOM60 configuration */
 #include "som60x2.h"
 
+#ifdef CONFIG_NAND_BOOT
 #undef CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_TEXT_BASE            0x26f00000
+#endif
 
 /*
  * DO NOT CHANGE - The IG60 must use the legacy load address
