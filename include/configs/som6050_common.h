@@ -117,6 +117,13 @@
 #define CONFIG_SPL_NAND_BASE
 #define CONFIG_SPL_NAND_IDENT
 
+#ifdef CONFIG_BOOTCOUNT
+
+#define CONFIG_BOOTCOUNT_ENV
+#define CONFIG_BOOTCOUNT_LIMIT
+
+#endif
+
 #endif
 
 #define CONFIG_USBNET_DEV_ADDR          "de:ad:be:ef:00:01"

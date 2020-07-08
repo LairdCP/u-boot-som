@@ -41,10 +41,6 @@
 		"ubi create ig 8e00000 dynamic;" \
 		"ubi create perm 1800000 dynamic\0"
 
-/* BOOTCOUNT */
-#define CONFIG_BOOTCOUNT_ENV
-#define CONFIG_BOOTCOUNT_LIMIT
-
 /* u-boot env in nand flash */
 #undef CONFIG_ENV_OFFSET
 #undef CONFIG_ENV_OFFSET_REDUND
