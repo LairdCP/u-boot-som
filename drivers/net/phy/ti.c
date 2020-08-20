@@ -207,7 +207,8 @@ static int dp83867_config_port_mirroring(struct phy_device *phydev)
 static int dp83867_of_init(struct phy_device *phydev)
 {
 	struct dp83867_private *dp83867 = phydev->priv;
-	ofnode node;
+	struct udevice *dev = phydev->dev;
+	ofnode node = dev_ofnode(dev);
 	u16 val;
 
 	/* Optional configuration */
@@ -220,10 +221,6 @@ static int dp83867_of_init(struct phy_device *phydev)
 	dp83867->clk_output_sel =
 		ofnode_read_u32_default(node, "ti,clk-output-sel",
 					DP83867_CLK_O_SEL_REF_CLK);
-
-	node = phy_get_ofnode(phydev);
-	if (!ofnode_valid(node))
-		return -EINVAL;
 
 	if (ofnode_read_bool(node, "ti,max-output-impedance"))
 		dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX;
