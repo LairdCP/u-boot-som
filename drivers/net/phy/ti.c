@@ -93,6 +93,10 @@
 #define DP83867_IO_MUX_CFG_CLK_O_SEL_MASK	\
 		GENMASK(0x1f, DP83867_IO_MUX_CFG_CLK_O_SEL_SHIFT)
 
+#define DP83867_IO_IMPEDANCE_OHM_MIN	35
+#define DP83867_IO_IMPEDANCE_OHM_MAX	70
+#define DP83867_IO_IMPEDANCE_OHM_CAL	50
+
 /* CFG4 bits */
 #define DP83867_CFG4_PORT_MIRROR_EN		BIT(0)
 
@@ -223,11 +227,17 @@ static int dp83867_of_init(struct phy_device *phydev)
 					DP83867_CLK_O_SEL_REF_CLK);
 
 	if (ofnode_read_bool(node, "ti,max-output-impedance"))
-		dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX;
+		dp83867->io_impedance = DP83867_IO_IMPEDANCE_OHM_MAX;
 	else if (ofnode_read_bool(node, "ti,min-output-impedance"))
-		dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN;
-	else
-		dp83867->io_impedance = -EINVAL;
+		dp83867->io_impedance = DP83867_IO_IMPEDANCE_OHM_MIN;
+	else {
+		ofnode_read_u32(node, "ti,output-impedance",
+			&dp83867->io_impedance);
+		if (dp83867->io_impedance > DP83867_IO_IMPEDANCE_OHM_MAX)
+			dp83867->io_impedance = DP83867_IO_IMPEDANCE_OHM_MAX;
+		else if (dp83867->io_impedance < DP83867_IO_IMPEDANCE_OHM_MIN)
+			dp83867->io_impedance = DP83867_IO_IMPEDANCE_OHM_MIN;
+	}
 
 	if (ofnode_read_bool(node, "ti,dp83867-rxctrl-strap-quirk"))
 		dp83867->rxctrl_strap_quirk = true;
@@ -269,16 +279,21 @@ static int dp83867_of_init(struct phy_device *phydev)
 	dp83867->rx_id_delay = DEFAULT_RX_ID_DELAY;
 	dp83867->tx_id_delay = DEFAULT_TX_ID_DELAY;
 	dp83867->fifo_depth = DEFAULT_FIFO_DEPTH;
-	dp83867->io_impedance = -EINVAL;
+	dp83867->io_impedance = DP83867_IO_IMPEDANCE_OHM_CAL;
 
 	return 0;
 }
 #endif
 
+static int dp83867_interp(int x, int x0, int y0, int x1, int y1)
+{
+	return y0 + ((y1 - y0) * (x - x0) + (x1 - x0) / 2) / (x1 - x0);
+}
+
 static int dp83867_config(struct phy_device *phydev)
 {
 	struct dp83867_private *dp83867;
-	unsigned int val, delay, cfg2;
+	unsigned int val, delay, cfg2, val50;
 	int ret;
 
 	if (!phydev->priv) {
@@ -362,14 +377,29 @@ static int dp83867_config(struct phy_device *phydev)
 		phy_write_mmd_indirect(phydev, DP83867_RGMIIDCTL,
 				       DP83867_DEVADDR, phydev->addr, delay);
 
-		if (dp83867->io_impedance >= 0) {
+		if (dp83867->io_impedance != DP83867_IO_IMPEDANCE_OHM_CAL) {
 			val = phy_read_mmd_indirect(phydev,
 						    DP83867_IO_MUX_CFG,
 						    DP83867_DEVADDR,
 						    phydev->addr);
+
+			val50 = val & DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
 			val &= ~DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
-			val |= dp83867->io_impedance &
-			       DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
+
+			if (dp83867->io_impedance < DP83867_IO_IMPEDANCE_OHM_CAL) {
+				val |= dp83867_interp(dp83867->io_impedance,
+					DP83867_IO_IMPEDANCE_OHM_MIN,
+					DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN,
+					DP83867_IO_IMPEDANCE_OHM_CAL,
+					val50);
+			} else if (dp83867->io_impedance < DP83867_IO_IMPEDANCE_OHM_CAL) {
+				val |= dp83867_interp(dp83867->io_impedance,
+					DP83867_IO_IMPEDANCE_OHM_CAL,
+					val50,
+					DP83867_IO_IMPEDANCE_OHM_MAX,
+					DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX);
+			}
+
 			phy_write_mmd_indirect(phydev, DP83867_IO_MUX_CFG,
 					       DP83867_DEVADDR, phydev->addr,
 					       val);
