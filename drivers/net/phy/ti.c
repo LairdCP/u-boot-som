@@ -398,9 +398,9 @@ static int dp83867_config(struct phy_device *phydev)
 			valr = dp83867_interp(dp83867->io_impedance);
 			valr += val50 - vale50;
 
-			if (valr > DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX)
+			if (valr < DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX)
 				valr = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX;
-			else if (valr < DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN)
+			else if (valr > DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN)
 				valr = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN;
 
 			val &= ~DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
