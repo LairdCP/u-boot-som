@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * at91-wb50n_common.dtsi - Device Tree include file for wb50n CPU module
+ *
+ *  Copyright (C) 2018-2020 Laird Connectivity
+ *
+ */
+
+#include "sama5d31.dtsi"
+
+/ {
+	model = "Laird Workgroup Bridge 50N - Atmel SAMA5D";
+	compatible = "laird,wb50n", "atmel,sama5d31", "atmel,sama5d3", "atmel,sama5";
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	memory {
+		reg = <0x20000000 0x4000000>;
+	};
+
+	ahb {
+		apb {
+			pinctrl@fffff200 {
+				board {
+					pinctrl_nand0_wp: nand0_wp {
+						u-boot,dm-pre-reloc;
+						atmel,pins = <AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
+					};
+
+					pinctrl_mmc0_cd: mmc0_cd {
+						u-boot,dm-pre-reloc;
+						atmel,pins = <AT91_PIOC 26 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>; /* PC26 GPIO with pullup deglitch */
+					};
+
+					pinctrl_usba_vbus: usba_vbus {
+						atmel,pins = <AT91_PIOB 13 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>; /* PB13 GPIO with deglitch */
+					};
+				};
+			};
+
+			sha@f8034000 {
+				status = "disabled";
+			};
+		};
+	};
+};
+
+&slow_xtal {
+	clock-frequency = <32768>;
+};
+
+&main_xtal {
+	clock-frequency = <12000000>;
+};
+
+&slow_osc {
+	atmel,osc-bypass;
+};
+
+&mmc0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_cd>;
+
+	slot@0 {
+		reg = <0>;
+		bus-width = <4>;
+		cd-gpios = <&pioC 26 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&macb1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	phy-mode = "rmii";
+};
+
+&dbgu {
+	u-boot,dm-pre-reloc;
+};
+
+&nand0 {
+	pinctrl-0 = <&pinctrl_nand0_ale_cle &pinctrl_nand0_wp>;
+	nand-bus-width = <8>;
+	nand-ecc-mode = "hw";
+	atmel,has-pmecc;
+	atmel,pmecc-cap = <8>;
+	atmel,pmecc-sector-size = <512>;
+	nand-on-flash-bbt;
+	status = "okay";
+};
+
+&usb0 {
+	atmel,vbus-gpio = <&pioB 13 GPIO_ACTIVE_LOW>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usba_vbus>;
+};
+
+&usb1 {
+	num-ports = <3>;
+	atmel,vbus-gpio = <&pioA 2 GPIO_ACTIVE_LOW>;
+	atmel,oc-gpio = <&pioA 4 GPIO_ACTIVE_LOW>;
+};

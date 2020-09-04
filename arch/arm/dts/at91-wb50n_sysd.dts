@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * at91-wb50n_sysd.dts - Device Tree file for wb50n evaluation board
+ *
+ *  Copyright (C) 2018 Laird Connectivity
+ *
+ */
+
+/dts-v1/;
+#include "at91-wb50n_sysd.dtsi"
+
+&mmc0 {
+	status = "okay";
+};
+
+&macb1 {
+	status = "okay";
+};
+
+&dbgu {
+	status = "okay";
+};
+
+&usb0 {
+	status = "okay";
+};

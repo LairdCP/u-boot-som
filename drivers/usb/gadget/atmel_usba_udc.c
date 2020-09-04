@@ -1336,6 +1336,7 @@ static int usba_udc_usb_remove(struct udevice *dev)
 }
 
 static const struct udevice_id usba_udc_ids[] = {
+	{ .compatible = "atmel,at91sam9g45-udc" },
 	{ .compatible = "atmel,sama5d3-udc" },
 	{ }
 };

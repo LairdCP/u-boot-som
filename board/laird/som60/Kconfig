@@ -46,11 +46,11 @@ config SYS_VENDOR
 	default "laird"
 
 config SYS_CONFIG_NAME
-	default "wb50"
+	default "wb50n"
 
 endif
 
-if TARGET_WB60
+if TARGET_WB50N_SYSD
 
 config SYS_BOARD
 	default "som60"
@@ -59,6 +59,6 @@ config SYS_VENDOR
 	default "laird"
 
 config SYS_CONFIG_NAME
-	default "som60"
+	default "wb50n_sysd"
 
 endif

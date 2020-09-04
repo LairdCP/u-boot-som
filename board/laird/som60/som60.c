@@ -8,6 +8,7 @@
 
 #include <common.h>
 #include <environment.h>
+#include <debug_uart.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
@@ -15,14 +16,12 @@
 
 #include <asm/arch/sama5_sfr.h>
 #include <asm/arch/sama5d3_smc.h>
-#include <asm/arch/at91_common.h>
 #include <asm/arch/atmel_mpddrc.h>
 #include <asm/arch/at91_sck.h>
 
 #include <linux/ctype.h>
 #include <linux/mtd/rawnand.h>
 
-#include <debug_uart.h>
 #include <uboot_aes.h>
 
 #include <../drivers/crypto/atmel_trng.h>
