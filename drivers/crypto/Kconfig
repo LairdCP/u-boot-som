@@ -2,16 +2,17 @@ menu "Hardware crypto devices"
 
 source drivers/crypto/fsl/Kconfig
 
+if ARCH_AT91 && CPU_V7
+
 config ATMEL_SHA
 	bool "Atmel SHA Driver support"
-	depends on ARCH_AT91 && SHA_HW_ACCEL
+	depends on SHA_HW_ACCEL
 	default y
 	help
 	  Enables the Atmel SHA accelerator.
 
 config ATMEL_TRNG
 	bool "Atmel TRNG Driver support"
-	depends on ARCH_AT91
 	default y
 	help
 	  Enables the Atmel True RNG.
@@ -23,4 +24,7 @@ config ATMEL_AES
 	help
 	  Enables the Atmel AES.
 
+endif
+
 endmenu
+

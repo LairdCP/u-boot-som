@@ -1,5 +1,5 @@
 /*
- * Configuation settings for the WB45N CPU Module.
+ * Configuation settings for the WB40N CPU Module.
  *
  * SPDX-License-Identifier: GPL-2.0+
  */
@@ -13,14 +13,13 @@
 
 /* ARM asynchronous clock */
 #define CONFIG_SYS_AT91_SLOW_CLOCK      32768
-#define CONFIG_SYS_AT91_MAIN_CLOCK      12000000 /* from 12 MHz crystal */
+#define CONFIG_SYS_AT91_MAIN_CLOCK      18432000 /* from 18.432 MHz crystal */
 
 #define CONFIG_CMDLINE_TAG	/* enable passing of ATAGs */
 #define CONFIG_SETUP_MEMORY_TAGS
 #define CONFIG_INITRD_TAG
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
-#define CONFIG_DISABLE_IMAGE_LEGACY
 
 /* general purpose I/O */
 #define CONFIG_ATMEL_LEGACY	/* required until (g)pio is fixed */
@@ -49,10 +48,10 @@
 /* SDRAM */
 #define CONFIG_NR_DRAM_BANKS            1
 #define CONFIG_SYS_SDRAM_BASE           ATMEL_BASE_CS1
-#define CONFIG_SYS_SDRAM_SIZE           SZ_64M
+#define CONFIG_SYS_SDRAM_SIZE           SZ_32M
 
 #define CONFIG_SYS_INIT_SP_ADDR \
-    (ATMEL_BASE_SRAM + SZ_32K - GENERATED_GBL_DATA_SIZE)
+    (ATMEL_BASE_SRAM1 + SZ_16K - GENERATED_GBL_DATA_SIZE)
 
 /* NAND flash */
 #define CONFIG_NAND_ATMEL
@@ -63,27 +62,20 @@
 #define CONFIG_SYS_NAND_MASK_ALE        (1 << 21)
 /* our CLE is AD22 */
 #define CONFIG_SYS_NAND_MASK_CLE        (1 << 22)
-#define CONFIG_SYS_NAND_ENABLE_PIN      AT91_PIN_PD4
-#define CONFIG_SYS_NAND_READY_PIN       AT91_PIN_PD5
+#define CONFIG_SYS_NAND_ENABLE_PIN      AT91_PIN_PC14
+#define CONFIG_SYS_NAND_READY_PIN       AT91_PIN_PC13
 #define CONFIG_SYS_NAND_ONFI_DETECTION
 #define CONFIG_SYS_NAND_USE_FLASH_BBT
-
-/* PMECC & PMERRLOC */
-#define CONFIG_ATMEL_NAND_HWECC
-#define CONFIG_ATMEL_NAND_HW_PMECC
-#define CONFIG_PMECC_CAP                4
-#define CONFIG_PMECC_SECTOR_SIZE        512
 
 #define CONFIG_MTD_DEVICE
 #define CONFIG_MTD_PARTITIONS
 
 /* System */
-#define CONFIG_SYS_TEXT_BASE            0x23f00000
-#define CONFIG_SYS_LOAD_ADDR            (CONFIG_SYS_SDRAM_BASE + SZ_32M)
+#define CONFIG_SYS_TEXT_BASE            0x21000000
+#define CONFIG_SYS_LOAD_ADDR            (CONFIG_SYS_SDRAM_BASE + SZ_4K)
 
 #define CONFIG_SYS_MALLOC_LEN           SZ_8M   /* Size of malloc() pool */
 #define CONFIG_SYS_MONITOR_LEN          SZ_512K /* max u-boot size */
-#define CONFIG_SYS_BOOTM_LEN            SZ_16M
 
 #ifdef CONFIG_BOOTCOUNT
 #define CONFIG_BOOTCOUNT_ENV
