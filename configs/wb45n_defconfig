@@ -38,7 +38,7 @@ CONFIG_CMD_PING=y
 CONFIG_CMD_HASH=y
 CONFIG_CMD_MTDPARTS=y
 CONFIG_MTDIDS_DEFAULT="nand0=atmel_nand"
-CONFIG_MTDPARTS_DEFAULT="mtdparts=atmel_nand:128k(at91bs)ro,512k(u-boot)ro,128k(u-boot-env-a),128k(u-boot-env-b),5M(kernel-a),5M(kernel-b),48M(rootfs-a),48M(rootfs-b),21376k(user)"
+CONFIG_MTDPARTS_DEFAULT="mtdparts=atmel_nand:128k(at91bs)ro,512k(u-boot)ro,128k(u-boot-env-a),128k(u-boot-env-b),2560k(kernel-a),2560k(kernel-b),38M(rootfs-a),38M(rootfs-b),46208k(user),512k(logs)"
 # CONFIG_PARTITIONS is not set
 CONFIG_OF_CONTROL=y
 CONFIG_ENV_IS_IN_NAND=y
