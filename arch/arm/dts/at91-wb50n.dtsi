@@ -6,113 +6,9 @@
  *
  */
 
-#include "sama5d31.dtsi"
-
-/ {
-	model = "Laird Workgroup Bridge 50N - Atmel SAMA5D";
-	compatible = "laird,wb50n", "atmel,sama5d31", "atmel,sama5d3", "atmel,sama5";
-
-	chosen {
-		stdout-path = "serial0:115200n8";
-	};
-
-	signature {
-		key-dev {
-			required = "conf";
-			algo = "sha256,rsa2048";
-			key-name-hint = "dev";
-		};
-	};
-
-	memory {
-		reg = <0x20000000 0x4000000>;
-	};
-
-	ahb {
-		apb {
-			pinctrl@fffff200 {
-				board {
-					pinctrl_nand0_wp: nand0_wp {
-						u-boot,dm-pre-reloc;
-						atmel,pins = <AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
-					};
-
-					pinctrl_mmc0_cd: mmc0_cd {
-						u-boot,dm-pre-reloc;
-						atmel,pins = <AT91_PIOC 26 AT91_PERIPH_GPIO AT91_PINCTRL_PULL_UP_DEGLITCH>; /* PC26 GPIO with pullup deglitch */
-					};
-
-					pinctrl_usba_vbus: usba_vbus {
-						atmel,pins = <AT91_PIOB 13 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>; /* PB13 GPIO with deglitch */
-					};
-				};
-			};
-
-			sha@f8034000 {
-				status = "disabled";
-			};
-		};
-	};
-	/*
-	 * This is a development-only AES-128 key passed from U-Boot into
-	 * the kernel for the encrypted filesystems; it will be
-	 * replaced in manufacturing with a production key.
-	 */
-	encryption {
-		laird,fs-key = <
-			0xbf4a626e 0x68ddba72 0x36094531 0x15fa806c
-			0x38862932 0x3078d54f 0x0b3e3d9f 0x0adfaae5
-			0xb194f2cd 0x402bc3c6 0x35b7d66c 0xd06c9e8d
-			0xc080cede 0xd8bff74a 0xc16c2cfe 0xeaca5bbf
-				>;
-	};
-};
-
-&slow_xtal {
-	clock-frequency = <32768>;
-};
-
-&main_xtal {
-	clock-frequency = <12000000>;
-};
-
-&slow_osc {
-	atmel,osc-bypass;
-};
-
-&mmc0 {
-	u-boot,dm-pre-reloc;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_cd>;
-
-	slot@0 {
-		reg = <0>;
-		bus-width = <4>;
-		cd-gpios = <&pioC 26 GPIO_ACTIVE_LOW>;
-	};
-};
-
-&macb1 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-
-	phy-mode = "rmii";
-};
-
-&dbgu {
-	u-boot,dm-pre-reloc;
-};
+#include "at91-wb50n_common.dtsi"
 
 &nand0 {
-	pinctrl-0 = <&pinctrl_nand0_ale_cle &pinctrl_nand0_wp>;
-	nand-bus-width = <8>;
-	nand-ecc-mode = "hw";
-	atmel,has-pmecc;
-	atmel,pmecc-cap = <8>;
-	atmel,pmecc-sector-size = <512>;
-	nand-on-flash-bbt;
-	status = "okay";
-
 	ubootspl@0 {
 		label = "u-boot-spl";
 		reg = <0x0 0x20000>;
@@ -120,33 +16,41 @@
 
 	uboot@20000 {
 		label = "u-boot";
-		reg = <0x20000 0x100000>;
+		reg = <0x20000 0x80000>;
 	};
 
-	ubootenv@120000 {
+	ubootenv@a0000 {
 		label = "u-boot-env-a";
-		reg = <0x120000 0x20000>;
+		reg = <0xa0000 0x20000>;
 	};
 
-	ubootenv@140000 {
+	ubootenv@c0000 {
 		label = "u-boot-env-b";
-		reg = <0x140000 0x20000>;
+		reg = <0xc0000 0x20000>;
 	};
 
-	ubi@160000 {
-		label = "ubi";
-		reg = <0x160000 0x7e20000>;
+	kernel-a@e0000 {
+		label = "kernel-a";
+		reg = <0xe0000 0x500000>;
 	};
-};
 
-&usb0 {
-	atmel,vbus-gpio = <&pioB 13 GPIO_ACTIVE_LOW>;
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usba_vbus>;
-};
+	kernel-b@5e0000 {
+		label = "kernel-b";
+		reg = <0x5e0000 0x500000>;
+	};
 
-&usb1 {
-	num-ports = <3>;
-	atmel,vbus-gpio = <&pioA 2 GPIO_ACTIVE_LOW>;
-	atmel,oc-gpio = <&pioA 4 GPIO_ACTIVE_LOW>;
+	rootfs-a@ae0000 {
+		label = "rootfs-a";
+		reg = <0xae0000 0x3000000>;
+	};
+
+	rootfs-b@3ae0000 {
+		label = "rootfs-b";
+		reg = <0x3ae0000 0x3000000>;
+	};
+
+	user@6ae0000 {
+		label = "user";
+		reg = <0x6ae0000 0x14e0000>;
+	};
 };

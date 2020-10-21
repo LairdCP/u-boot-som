@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * at91-wb50n.dtsi - Device Tree include file for wb50n cpu module
+ *
+ *  Copyright (C) 2018-2020 Laird Connectivity
+ *
+ */
+
+#include "at91-wb50n_common.dtsi"
+
+/ {
+	signature {
+		key-dev {
+			required = "conf";
+			algo = "sha256,rsa2048";
+			key-name-hint = "dev";
+		};
+	};
+
+	/*
+	 * This is a development-only AES-128 key passed from U-Boot into
+	 * the kernel for the encrypted filesystems; it will be
+	 * replaced in manufacturing with a production key.
+	 */
+	encryption {
+		laird,fs-key = <
+			0xbf4a626e 0x68ddba72 0x36094531 0x15fa806c
+			0x38862932 0x3078d54f 0x0b3e3d9f 0x0adfaae5
+			0xb194f2cd 0x402bc3c6 0x35b7d66c 0xd06c9e8d
+			0xc080cede 0xd8bff74a 0xc16c2cfe 0xeaca5bbf
+				>;
+	};
+};
+
+&mmc0 {
+	u-boot,dm-pre-reloc;
+};
+
+&nand0 {
+	ubootspl@0 {
+		label = "u-boot-spl";
+		reg = <0x0 0x20000>;
+	};
+
+	uboot@20000 {
+		label = "u-boot";
+		reg = <0x20000 0x100000>;
+	};
+
+	ubootenv@120000 {
+		label = "u-boot-env-a";
+		reg = <0x120000 0x20000>;
+	};
+
+	ubootenv@140000 {
+		label = "u-boot-env-b";
+		reg = <0x140000 0x20000>;
+	};
+
+	ubi@160000 {
+		label = "ubi";
+		reg = <0x160000 0x7e20000>;
+	};
+};

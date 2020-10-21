@@ -20,7 +20,7 @@
 		"ubi create perm 4335000 dynamic\0"
 
 /* Timing and sizes for MT29C4G48MAYBBAMR-48 */
-#define CONFIG_SYS_SDRAM_SIZE           0x10000000
+#define CONFIG_SYS_SDRAM_SIZE           SZ_256M
 
 #define LPDDR_CR \
 	(ATMEL_MPDDRC_CR_NC_COL_10         |\

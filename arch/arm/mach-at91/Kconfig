@@ -236,13 +236,27 @@ config TARGET_VINCO
 	select SAMA5D4
 	select SUPPORT_SPL
 
+config TARGET_WB40N
+	bool "Support Laird Connectivity WB40N"
+	select BOARD_LATE_INIT
+	select AT91SAM9G20
+	select BOARD_EARLY_INIT_F
+
 config TARGET_WB45N
 	bool "Support Laird Connectivity WB45N"
-	select CPU_ARM926EJS
-	select SUPPORT_SPL
+	select BOARD_LATE_INIT
+	select AT91SAM9X5
+	select BOARD_EARLY_INIT_F
 
 config TARGET_WB50N
 	bool "Support Laird Connectivity WB50N"
+	select BOARD_LATE_INIT
+	select SAMA5D3
+	select SUPPORT_SPL
+	select BOARD_EARLY_INIT_F
+
+config TARGET_WB50N_SYSD
+	bool "Support Laird Connectivity WB50N SYSD"
 	select BOARD_LATE_INIT
 	select SAMA5D3
 	select SUPPORT_SPL
@@ -264,13 +278,6 @@ config TARGET_SOM60X2
 
 config TARGET_IG60
 	bool "Support Laird Connectivity IG60"
-	select BOARD_LATE_INIT
-	select SAMA5D3
-	select SUPPORT_SPL
-	select BOARD_EARLY_INIT_F
-
-config TARGET_WB60
-	bool "Support Laird Connectivity WB60"
 	select BOARD_LATE_INIT
 	select SAMA5D3
 	select SUPPORT_SPL
@@ -310,6 +317,7 @@ source "board/ronetix/pm9g45/Kconfig"
 source "board/siemens/corvus/Kconfig"
 source "board/siemens/taurus/Kconfig"
 source "board/siemens/smartweb/Kconfig"
+source "board/laird/wb40n/Kconfig"
 source "board/laird/wb45n/Kconfig"
 source "board/laird/som60/Kconfig"
 

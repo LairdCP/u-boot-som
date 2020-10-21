@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * at91-wb45n.dts - Device Tree file for WB45NBT board
+ *
+ * Copyright (C) 2020 Laird Connectivity
+ *
+ */
+
+/dts-v1/;
+
+#include "at91-wb45n.dtsi"
+
+&usb2 {
+	status = "okay";
+};
+
+&macb0 {
+	status = "okay";
+};
+
+&dbgu {
+	status = "okay";
+};

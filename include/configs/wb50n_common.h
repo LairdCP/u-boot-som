@@ -8,18 +8,8 @@
 
 #include "som6050_common.h"
 
-#define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
-	"_formatubi=nand erase.part ubi;" \
-		"ubi part ubi;" \
-		"for part in a b; do " \
-			"ubi create kernel_${part}  800000 dynamic;" \
-			"ubi create rootfs_${part} 2C50000 dynamic;" \
-			"ubi create rootfs_data_${part} 400000 dynamic;" \
-		"done;" \
-		"ubi create perm 5EF000 dynamic\0"
-
 /* Timing and sizes for MT46H16M32LF (5 & 6) */
-#define CONFIG_SYS_SDRAM_SIZE           0x04000000
+#define CONFIG_SYS_SDRAM_SIZE           SZ_64M
 
 #define LPDDR_CR \
 	(ATMEL_MPDDRC_CR_NC_COL_9          |\

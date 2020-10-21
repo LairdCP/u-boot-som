@@ -27,6 +27,11 @@
 #include <malloc.h>
 #include <usb/lin_gadget_compat.h>
 
+#include <dm.h>
+#include <dm/device.h>
+#include <usb.h>
+#include <asm/arch/clk.h>
+
 #include "at91_udc.h"
 
 /*
@@ -1543,3 +1548,52 @@ int at91_udc_probe(struct at91_udc_data *pdata)
 	INFO("%s version %s\n", driver_name, DRIVER_VERSION);
 	return 0;
 }
+
+#ifdef CONFIG_DM_USB
+static struct at91_udc_data udc_data  = {
+	.baseaddr = ATMEL_BASE_UDP0,
+};
+
+static int at91_udc_usb_probe(struct udevice *dev)
+{
+	/* Enable PLLB */
+	at91_pllb_clk_enable(get_pllb_init());
+
+	/* Enable UDPCK clock, MCK is enabled in at91_clock_init() */
+	at91_periph_clk_enable(ATMEL_ID_UDP);
+
+	at91_system_clk_enable(AT91SAM926x_PMC_UDP);
+
+	return at91_udc_probe(&udc_data);
+}
+
+static int at91_udc_usb_remove(struct udevice *dev)
+{
+	struct at91_udc *udc = controller;
+
+	at91_stop(&udc->gadget);
+
+	at91_system_clk_disable(AT91SAM926x_PMC_UDP);
+
+	at91_periph_clk_disable(ATMEL_ID_UDP);
+
+	at91_pllb_clk_disable();
+
+	return 0;
+}
+
+static const struct udevice_id at91_udc_ids[] = {
+	{ .compatible = "atmel,at91sam9260-udc" },
+	{ }
+};
+
+U_BOOT_DRIVER(usb_usba_udc) = {
+	.name		= "at91_udc",
+	.id		= UCLASS_USB_DEV_GENERIC,
+	.of_match	= at91_udc_ids,
+	.probe		= at91_udc_usb_probe,
+	.remove		= at91_udc_usb_remove,
+	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
+	.flags	= DM_FLAG_OS_PREPARE,
+};
+#endif
