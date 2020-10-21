@@ -20,7 +20,6 @@
 #define CONFIG_INITRD_TAG
 
 #define CONFIG_SKIP_LOWLEVEL_INIT
-#define CONFIG_DISABLE_IMAGE_LEGACY
 
 /* general purpose I/O */
 #define CONFIG_ATMEL_LEGACY	/* required until (g)pio is fixed */
