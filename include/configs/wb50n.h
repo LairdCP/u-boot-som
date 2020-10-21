@@ -20,6 +20,8 @@
 #undef  CONFIG_SYS_LOAD_ADDR
 #define CONFIG_SYS_LOAD_ADDR            (CONFIG_SYS_SDRAM_BASE + SZ_32M)
 
+#undef  CONFIG_DISABLE_IMAGE_LEGACY
+
 #define CONFIG_EXTRA_ENV_SETTINGS       \
 	"autoload=no\0" \
 	"autostart=no\0" \

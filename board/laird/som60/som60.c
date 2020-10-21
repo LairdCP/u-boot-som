@@ -378,9 +378,11 @@ void board_quiesce_devices(void)
 	atmel_trng_remove();
 
 #ifdef CONFIG_NAND
+#ifndef CONFIG_TARGET_WB50N
 	/* Activate Flash Write Protect discrete,
 	 * so that flash enter standby if not used in kernel */
 	at91_set_pio_output(AT91_PIO_PORTE, 14, 0);
+#endif
 
 #ifndef CONFIG_NAND_BOOT
 	at91_periph_clk_disable(ATMEL_ID_SMC);
