@@ -9,7 +9,7 @@ CONFIG_LOCALVERSION="-wb40"
 CONFIG_NAND_BOOT=y
 CONFIG_BOOTDELAY=3
 CONFIG_USE_BOOTARGS=y
-CONFIG_BOOTARGS="console=ttyS0,115200 loglevel=4 rw rootfstype=ubifs root=ubi0:rootfs ubi.mtd=6 init=/usr/sbin/fipsInit.sh fips=${fips:=0} fips_wifi=${fips_wifi:=0}"
+CONFIG_BOOTARGS="console=ttyS0,115200 loglevel=4 rw rootfstype=ubifs root=ubi0:rootfs ubi.mtd=6 init=/usr/sbin/fipsInit.sh fips=0 fips_wifi=0"
 CONFIG_USE_BOOTCOMMAND=y
 CONFIG_BOOTCOMMAND="nand read 0x22000000 0x000e0000 0x500000; bootm 0x22000000"
 # CONFIG_DISPLAY_BOARDINFO is not set
