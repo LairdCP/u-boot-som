@@ -16,6 +16,9 @@ static void usage(void);
 #define UBI_DEV_START "/dev/ubi"
 #define UBI_SYSFS "/sys/class/ubi"
 
+#define MTD_DEV_START "/dev/mtd"
+#define MTD_SYSFS "/sys/class/mtd"
+
 static int is_ubi_devname(const char *devname)
 {
 	return !strncmp(devname, UBI_DEV_START, sizeof(UBI_DEV_START) - 1);
@@ -53,6 +56,28 @@ static off_t get_ubi_data_size(const char *devname)
 	return res;
 }
 
+static int is_mtd_devname(const char *devname)
+{
+	return !strncmp(devname, MTD_DEV_START, sizeof(MTD_DEV_START) - 1);
+}
+
+static off_t get_mtd_data_size(const char *devname)
+{
+	FILE *file;
+	off_t res = 0;
+	char path[256];
+
+	snprintf(path, sizeof(path), MTD_SYSFS "%s/size", devname + 4);
+
+	file = fopen(path, "r");
+	if (file) {
+		if (fscanf(file, "%jd", &res) != 1)
+			res = 0;
+		fclose(file);
+	}
+
+	return res;
+}
 /* parameters initialized by core will be used by the image type code */
 static struct image_tool_params params = {
 	.type = IH_TYPE_KERNEL,
@@ -104,7 +129,7 @@ int main(int argc, char **argv)
 	char *ptr;
 	int retval = EXIT_SUCCESS;
 	struct image_type_params *tparams = NULL;
-	bool is_ubi;
+	bool is_ubi, is_mtd;
 
 	params.cmdname = *argv;
 
@@ -182,9 +207,12 @@ int main(int argc, char **argv)
 	if (params.lflag || params.iflag) {
 		retval = EXIT_FAILURE;
 		is_ubi = is_ubi_devname(params.imagefile);
-		if (is_ubi) {
+		is_mtd = is_mtd_devname(params.imagefile);
+		if (is_ubi || is_mtd) {
 			memset(&sbuf, 0, sizeof(sbuf));
-			sbuf.st_size = get_ubi_data_size(params.imagefile);
+			sbuf.st_size = is_ubi ?
+				get_ubi_data_size(params.imagefile) :
+				get_mtd_data_size(params.imagefile);
 			sbuf.st_mode = S_IFREG;
 
 			if (!sbuf.st_size) {
@@ -220,7 +248,7 @@ int main(int argc, char **argv)
 			goto fail;
 		}
 
-		if (is_ubi) {
+		if (is_ubi || is_mtd) {
 			ptr = malloc(sbuf.st_size + 1);
 			if (!ptr) {
 				fprintf(stderr, "%s: Not enough memory \"%s\": %s\n",
