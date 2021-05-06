@@ -80,6 +80,8 @@
 &macb0 {
 	status = "okay";
 
+	vsc8531,clk-out-frequency = <125000000>;
+
 	/* MDIO bus nodes are not supported yet by u-boot */
 	ksz9021,rgmii_2.0_timing;
 };
