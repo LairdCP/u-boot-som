@@ -13,6 +13,7 @@
 #include <bitfield.h>
 #include <time.h>
 #include <linux/delay.h>
+#include <dm.h>
 
 /* Microsemi PHY ID's */
 #define PHY_ID_VSC8530                  0x00070560
@@ -1221,16 +1222,12 @@ static int vsc8531_vsc8541_mac_config(struct phy_device *phydev)
 
 static int vsc8531_vsc8541_clkout_config(struct phy_device *phydev)
 {
-	struct ofnode_phandle_args phandle_args;
+	ofnode node = dev_ofnode(phydev->dev);
 	u32 clkout_rate = 0;
 	u16 reg_val;
-	int retval;
 
-	retval = dev_read_phandle_with_args(phydev->dev, "phy-handle", NULL,
-					    0, 0, &phandle_args);
-	if (!retval)
-		clkout_rate = ofnode_read_u32_default(phandle_args.node,
-						"vsc8531,clk-out-frequency", 0);
+	clkout_rate = ofnode_read_u32_default(node,
+					"vsc8531,clk-out-frequency", 0);
 
 	switch (clkout_rate) {
 	case 0:
