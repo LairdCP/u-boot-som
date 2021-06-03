@@ -306,7 +306,35 @@ void som60_fs_key_inject(void)
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT
 void board_debug_uart_init(void)
 {
+#if   CONFIG_DEBUG_UART_BASE == ATMEL_BASE_DBGU   // serial0
 	at91_seriald_hw_init();
+#elif CONFIG_DEBUG_UART_BASE == ATMEL_BASE_USART0 // serial1
+	at91_serial0_hw_init();
+#elif CONFIG_DEBUG_UART_BASE == ATMEL_BASE_USART1 // serial2
+	at91_serial1_hw_init();
+#elif CONFIG_DEBUG_UART_BASE == ATMEL_BASE_USART2 // serial3
+	at91_serial2_hw_init();
+#elif CONFIG_DEBUG_UART_BASE == ATMEL_BASE_USART3 // serial4
+	at91_pio3_set_b_periph(AT91_PIO_PORTE, 19, 0);	/* TXD4 */
+	at91_pio3_set_b_periph(AT91_PIO_PORTE, 18, 1);	/* RXD4 */
+
+	/* Enable clock */
+	at91_periph_clk_enable(ATMEL_ID_USART3);
+#elif CONFIG_DEBUG_UART_BASE == ATMEL_BASE_UART0  // serial5
+	at91_pio3_set_a_periph(AT91_PIO_PORTC, 30, 0);	/* TXD5 */
+	at91_pio3_set_a_periph(AT91_PIO_PORTC, 29, 1);	/* RXD5 */
+
+	/* Enable clock */
+	at91_periph_clk_enable(ATMEL_ID_UART0);
+#elif CONFIG_DEBUG_UART_BASE == ATMEL_BASE_UART1  // serial6
+	at91_pio3_set_b_periph(AT91_PIO_PORTA, 31, 0);	/* TXD6 */
+	at91_pio3_set_b_periph(AT91_PIO_PORTA, 30, 1);	/* RXD6 */
+
+	/* Enable clock */
+	at91_periph_clk_enable(ATMEL_ID_UART1);
+#else
+	#error "Unknown debug port specified"
+#endif
 }
 #endif
 
