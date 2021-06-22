@@ -23,7 +23,7 @@ void at91_disable_wdt(void)
 }
 #endif
 
-#if defined(CONFIG_SAMA5D2) || \
+#if defined(CONFIG_SAMA5D2) || defined(CONFIG_SAMA5D3) || \
     defined(CONFIG_SAMA5D4)
 #include <asm/arch/sama5_boot.h>
 struct {
