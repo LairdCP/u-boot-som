@@ -428,30 +428,83 @@ static void at91sama5d3_slowclock_init(void)
 	static const ulong *reg = (ulong *)ATMEL_BASE_SCKCR;
 	unsigned tmp;
 
+	/* Enable the internal 32 kHz RC oscillator for low power by writing a 1 to the RCEN bit. */
 	tmp = readl(reg);
-	if ((tmp & AT91SAM9G45_SCKCR_OSCSEL) == AT91SAM9G45_SCKCR_OSCSEL_RC) {
-		tmp |= AT91SAM9G45_SCKCR_OSC32EN;
-		writel(tmp, reg);
+	tmp |= AT91SAM9G45_SCKCR_RCEN;
+	writel(tmp, reg);
 
-		tmp = readl(reg);
-		tmp &= ~AT91SAM9G45_SCKCR_OSC32EN;
-		tmp |= AT91SAM9G45_SCKCR_OSC32BYP;
-		writel(tmp, reg);
+	/* Wait internal 32 kHz RC startup time for clock stabilization (software loop). */
+	/* 500 us */
+	udelay(500);
 
-		tmp = readl(reg);
-		tmp |= AT91SAM9G45_SCKCR_OSCSEL_32;
-		writel(tmp, reg);
+	/* Switch from 32768 Hz oscillator to internal RC by writing a 0 to the OSCSEL bit. */
+	tmp = readl(reg);
+	tmp &= ~AT91SAM9G45_SCKCR_OSCSEL;
+	writel(tmp, reg);
 
-		udelay(153);
+	/* Wait 5 slow clock cycles for internal resynchronization. */
+	/* 5 slow clock cycles = ~153 us (5 / 32768) */
+	udelay(153);
 
-		tmp = readl(reg);
-		tmp &= ~AT91SAM9G45_SCKCR_RCEN;
-		writel(tmp, reg);
-	}
+	/* Disable the 32768 Hz oscillator by writing a 0 to the OSC32EN bit. */
+	tmp = readl(reg);
+	tmp &= ~AT91SAM9G45_SCKCR_OSC32EN;
+	writel(tmp, reg);
+
+	/* Wait 5 slow clock cycles for internal resynchronization. */
+	/* 5 slow clock cycles = ~153 us (5 / 32768) */
+	udelay(153);
+
+	/*
+	 * Enable the 32768 Hz oscillator by setting the bit OSC32EN to 1
+	 */
+	tmp = readl(reg);
+	tmp |= AT91SAM9G45_SCKCR_OSC32EN;
+	writel(tmp, reg);
+
+	/* Bypass the 32kHz oscillator by using an external clock
+	 * Set OSC32BYP=1 and OSC32EN=0 atomically
+	 */
+	tmp = readl(reg);
+	tmp &= ~AT91SAM9G45_SCKCR_OSC32EN;
+	tmp |= AT91SAM9G45_SCKCR_OSC32BYP;
+	writel(tmp, reg);
+
+	/*
+	 * Switching from internal 32kHz RC oscillator to 32768 Hz oscillator
+	 * by setting the bit OSCSEL to 1
+	 */
+	tmp = readl(reg);
+	tmp |= AT91SAM9G45_SCKCR_OSCSEL_32;
+	writel(tmp, reg);
+
+	/*
+	 * Waiting 5 slow clock cycles for internal resynchronization
+	 * 5 slow clock cycles = ~153 us (5 / 32768)
+	 */
+	udelay(153);
+
+	/*
+	 * Disable the 32kHz RC oscillator by setting the bit RCEN to 0
+	 */
+	tmp = readl(reg);
+	tmp &= ~AT91SAM9G45_SCKCR_RCEN;
+	writel(tmp, reg);
+
+	/* Delay makes boot much more stable
+	 * This delay present on boostrap for the case of the oscillator
+	 * not in bypass mode, which is all Microchip demo boards
+	 * My guess Microchip misattributed the reson for delay need
+	 */
+	udelay(1300000);
 }
 
 void spl_board_init(void)
 {
+	at91sama5d3_slowclock_init();
+
+	at91_disable_smd_clock();
+
 #ifdef CONFIG_NAND_BOOT
 	const struct nand_data_interface *conf;
 
@@ -460,10 +513,6 @@ void spl_board_init(void)
 	conf = nand_get_default_data_interface();
 	atmel_setup_data_interface(NULL, 1, conf);
 #endif
-
-	at91_disable_smd_clock();
-
-	at91sama5d3_slowclock_init();
 }
 
 #ifdef CONFIG_SPL_LOAD_FIT
