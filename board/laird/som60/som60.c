@@ -41,9 +41,58 @@ struct key_prop {
 };
 #endif
 
+static unsigned atmel_encode_ncycles(unsigned int ncycles,
+				     unsigned int msbpos,
+				     unsigned int msbwidth,
+				     unsigned int msbfactor)
+{
+	unsigned int lsbmask = (1 << msbpos) - 1;
+	unsigned int msbmask = (1 << msbwidth) - 1;
+	unsigned int msb, lsb;
+
+	msb = ncycles / msbfactor;
+	lsb = ncycles % msbfactor;
+
+	if (lsb > lsbmask) {
+		lsb = 0;
+		msb++;
+	}
+
+	/*
+	 * Let's just put the maximum we can if the requested setting does
+	 * not fit in the register field.
+	 */
+	if (msb > msbmask) {
+		msb = msbmask;
+		lsb = lsbmask;
+	}
+
+	return (msb << msbpos) | lsb;
+}
+
+static unsigned atmel_encode_setup_ncycles(unsigned int ncycles)
+{
+	return atmel_encode_ncycles(ncycles, 5, 1, 128);
+}
+
+static unsigned atmel_encode_pulse_ncycles(unsigned int ncycles)
+{
+	return atmel_encode_ncycles(ncycles, 6, 1, 256);
+}
+
+static unsigned atmel_encode_cycle_ncycles(unsigned int ncycles)
+{
+	return atmel_encode_ncycles(ncycles, 7, 2, 256);
+}
+
+static unsigned atmel_encode_timing_ncycles(unsigned int ncycles)
+{
+	return atmel_encode_ncycles(ncycles, 3, 1, 64);
+}
+
 /* Configures NAND controller from the timing table supplied */
 int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
-				       const struct nand_data_interface *conf)
+			       const struct nand_data_interface *conf)
 {
 	struct at91_smc *smc = (struct at91_smc *)ATMEL_BASE_SMC;
 
@@ -75,6 +124,9 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	/* Clock to period in ps */
 	mckperiodps = DIV_ROUND_DOWN_ULL(1000000000000ULL, get_mck_clk_rate());
 
+	/* Truncate frequency to match Linux calculation */
+	mckperiodps -= mckperiodps % 1000;
+
 	/*
 	 * Set write pulse timing. This one is easy to extract:
 	 *
@@ -82,7 +134,7 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	 */
 	ncycles = DIV_ROUND_UP(timings->tWP_min, mckperiodps);
 	totalcycles = ncycles;
-	pulse_reg |= AT91_SMC_PULSE_NWE(ncycles);
+	pulse_reg |= AT91_SMC_PULSE_NWE(atmel_encode_pulse_ncycles(ncycles));
 
 	/*
 	 * The write setup timing depends on the operation done on the NAND.
@@ -100,7 +152,7 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	ncycles = DIV_ROUND_UP(timeps, mckperiodps);
 	ncycles = ncycles > totalcycles ? ncycles - totalcycles : 0;
 	totalcycles += ncycles;
-	setup_reg |= AT91_SMC_SETUP_NWE(ncycles);
+	setup_reg |= AT91_SMC_SETUP_NWE(atmel_encode_setup_ncycles(ncycles));
 
 	/*
 	 * As for the write setup timing, the write hold timing depends on the
@@ -122,7 +174,7 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	 */
 	ncycles = DIV_ROUND_UP(timings->tWC_min, mckperiodps);
 	ncycles = max(totalcycles, ncycles);
-	cycle_reg |= AT91_SMC_CYCLE_NWE(ncycles);
+	cycle_reg |= AT91_SMC_CYCLE_NWE(atmel_encode_cycle_ncycles(ncycles));
 
 	/*
 	 * We don't want the CS line to be toggled between each byte/word
@@ -131,7 +183,7 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	 *
 	 * NCS_WR_PULSE = NWE_CYCLE
 	 */
-	pulse_reg |= AT91_SMC_PULSE_NCS_WR(ncycles);
+	pulse_reg |= AT91_SMC_PULSE_NCS_WR(atmel_encode_pulse_ncycles(ncycles));
 
 	/*
 	 * As for the write setup timing, the read hold timing depends on the
@@ -169,7 +221,7 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	 */
 	ncycles = DIV_ROUND_UP(timings->tRP_min, mckperiodps);
 	totalcycles += ncycles;
-	pulse_reg |= AT91_SMC_PULSE_NRD(ncycles);
+	pulse_reg |= AT91_SMC_PULSE_NRD(atmel_encode_pulse_ncycles(ncycles));
 
 	/*
 	 * The read cycle timing is directly matching tRC, but is also
@@ -182,7 +234,7 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	 */
 	ncycles = DIV_ROUND_UP(timings->tRC_min, mckperiodps);
 	ncycles = max(totalcycles, ncycles);
-	cycle_reg |= AT91_SMC_CYCLE_NRD(ncycles);
+	cycle_reg |= AT91_SMC_CYCLE_NRD(atmel_encode_cycle_ncycles(ncycles));
 
 	/*
 	 * We don't want the CS line to be toggled between each byte/word
@@ -191,37 +243,23 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	 *
 	 * NCS_RD_PULSE = NRD_CYCLE
 	 */
-	pulse_reg |= AT91_SMC_PULSE_NCS_RD(ncycles);
+	pulse_reg |= AT91_SMC_PULSE_NCS_RD(atmel_encode_pulse_ncycles(ncycles));
 
 	/* Txxx timings are directly matching tXXX ones. */
 	ncycles = DIV_ROUND_UP(timings->tCLR_min, mckperiodps);
-	timings_reg |= AT91_SMC_TIMINGS_TCLR(ncycles);
+	timings_reg |= AT91_SMC_TIMINGS_TCLR(atmel_encode_timing_ncycles(ncycles));
 
 	ncycles = DIV_ROUND_UP(timings->tADL_min, mckperiodps);
-
-	/*
-	 * Version 4 of the ONFI spec mandates that tADL be at least 400
-	 * nanoseconds, but, depending on the master clock rate, 400 ns may not
-	 * fit in the tADL field of the SMC reg.
-	 *
-	 * Note that previous versions of the ONFI spec had a lower tADL_min
-	 * (100 or 200 ns). It's not clear why this timing constraint got
-	 * increased but it seems most NANDs are fine with values lower than
-	 * 400ns, so we should be safe.
-	 */
-	if (ncycles > 15)
-		ncycles = 15;
-
-	timings_reg |= AT91_SMC_TIMINGS_TADL(ncycles);
+	timings_reg |= AT91_SMC_TIMINGS_TADL(atmel_encode_timing_ncycles(ncycles));
 
 	ncycles = DIV_ROUND_UP(timings->tAR_min, mckperiodps);
-	timings_reg |= AT91_SMC_TIMINGS_TAR(ncycles);
+	timings_reg |= AT91_SMC_TIMINGS_TAR(atmel_encode_timing_ncycles(ncycles));
 
 	ncycles = DIV_ROUND_UP(timings->tRR_min, mckperiodps);
-	timings_reg |= AT91_SMC_TIMINGS_TRR(ncycles);
+	timings_reg |= AT91_SMC_TIMINGS_TRR(atmel_encode_timing_ncycles(ncycles));
 
 	ncycles = DIV_ROUND_UP(timings->tWB_max, mckperiodps);
-	timings_reg |= AT91_SMC_TIMINGS_TWB(ncycles);
+	timings_reg |= AT91_SMC_TIMINGS_TWB(atmel_encode_timing_ncycles(ncycles));
 
 	/* Attach the CS line to the NFC logic. */
 	timings_reg |= AT91_SMC_TIMINGS_NFSEL(1) | AT91_SMC_TIMINGS_RBNSEL(3);
