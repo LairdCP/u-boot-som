@@ -19,7 +19,7 @@ void *malloc_simple(size_t bytes)
 	void *ptr;
 
 	new_ptr = gd->malloc_ptr + bytes;
-	debug("%s: size=%zx, ptr=%lx, limit=%lx: ", __func__, bytes, new_ptr,
+	debug("%s: size=%lx, ptr=%lx, limit=%lx: ", __func__, (ulong)bytes, new_ptr,
 	      gd->malloc_limit);
 	if (new_ptr > gd->malloc_limit) {
 		debug("space exhausted\n");
