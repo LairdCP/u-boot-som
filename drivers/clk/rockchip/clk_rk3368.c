@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * (C) Copyright 2017 Rockchip Electronics Co., Ltd
  * Author: Andy Yan <andy.yan@rock-chips.com>
  * (C) Copyright 2017 Theobroma Systems Design und Consulting GmbH
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -10,17 +10,20 @@
 #include <dm.h>
 #include <dt-structs.h>
 #include <errno.h>
+#include <log.h>
+#include <malloc.h>
 #include <mapmem.h>
 #include <syscon.h>
 #include <bitfield.h>
-#include <asm/arch/clock.h>
-#include <asm/arch/cru_rk3368.h>
-#include <asm/arch/hardware.h>
+#include <asm/arch-rockchip/clock.h>
+#include <asm/arch-rockchip/cru_rk3368.h>
+#include <asm/arch-rockchip/hardware.h>
 #include <asm/io.h>
+#include <dm/device-internal.h>
 #include <dm/lists.h>
 #include <dt-bindings/clock/rk3368-cru.h>
-
-DECLARE_GLOBAL_DATA_PTR;
+#include <linux/delay.h>
+#include <linux/stringify.h>
 
 #if CONFIG_IS_ENABLED(OF_PLATDATA)
 struct rk3368_clk_plat {
@@ -155,7 +158,7 @@ static void rkclk_init(struct rk3368_cru *cru)
 }
 #endif
 
-#if !IS_ENABLED(CONFIG_SPL_BUILD) || CONFIG_IS_ENABLED(MMC_SUPPORT)
+#if !IS_ENABLED(CONFIG_SPL_BUILD) || CONFIG_IS_ENABLED(MMC)
 static ulong rk3368_mmc_get_clk(struct rk3368_cru *cru, uint clk_id)
 {
 	u32 div, con, con_id, rate;
@@ -311,15 +314,43 @@ static ulong rk3368_ddr_set_clk(struct rk3368_cru *cru, ulong set_rate)
 #endif
 
 #if CONFIG_IS_ENABLED(GMAC_ROCKCHIP)
-static ulong rk3368_gmac_set_clk(struct rk3368_cru *cru,
-				 ulong clk_id, ulong set_rate)
+static ulong rk3368_gmac_set_clk(struct rk3368_cru *cru, ulong set_rate)
 {
+	ulong ret;
+
 	/*
-	 * This models the 'assigned-clock-parents = <&ext_gmac>' from
-	 * the DTS and switches to the 'ext_gmac' clock parent.
+	 * The gmac clock can be derived either from an external clock
+	 * or can be generated from internally by a divider from SCLK_MAC.
 	 */
-	rk_setreg(&cru->clksel_con[43], GMAC_MUX_SEL_EXTCLK);
-	return set_rate;
+	if (readl(&cru->clksel_con[43]) & GMAC_MUX_SEL_EXTCLK) {
+		/* An external clock will always generate the right rate... */
+		ret = set_rate;
+	} else {
+		u32 con = readl(&cru->clksel_con[43]);
+		ulong pll_rate;
+		u8 div;
+
+		if (((con >> GMAC_PLL_SHIFT) & GMAC_PLL_MASK) ==
+		    GMAC_PLL_SELECT_GENERAL)
+			pll_rate = GPLL_HZ;
+		else if (((con >> GMAC_PLL_SHIFT) & GMAC_PLL_MASK) ==
+			 GMAC_PLL_SELECT_CODEC)
+			pll_rate = CPLL_HZ;
+		else
+			/* CPLL is not set */
+			return -EPERM;
+
+		div = DIV_ROUND_UP(pll_rate, set_rate) - 1;
+		if (div <= 0x1f)
+			rk_clrsetreg(&cru->clksel_con[43], GMAC_DIV_CON_MASK,
+				     div << GMAC_DIV_CON_SHIFT);
+		else
+			debug("Unsupported div for gmac:%d\n", div);
+
+		return DIV_TO_RATE(pll_rate, div);
+	}
+
+	return ret;
 }
 #endif
 
@@ -439,7 +470,7 @@ static ulong rk3368_clk_get_rate(struct clk *clk)
 	case SCLK_SPI0 ... SCLK_SPI2:
 		rate = rk3368_spi_get_clk(priv->cru, clk->id);
 		break;
-#if !IS_ENABLED(CONFIG_SPL_BUILD) || CONFIG_IS_ENABLED(MMC_SUPPORT)
+#if !IS_ENABLED(CONFIG_SPL_BUILD) || CONFIG_IS_ENABLED(MMC)
 	case HCLK_SDMMC:
 	case HCLK_EMMC:
 		rate = rk3368_mmc_get_clk(priv->cru, clk->id);
@@ -470,7 +501,7 @@ static ulong rk3368_clk_set_rate(struct clk *clk, ulong rate)
 		ret = rk3368_ddr_set_clk(priv->cru, rate);
 		break;
 #endif
-#if !IS_ENABLED(CONFIG_SPL_BUILD) || CONFIG_IS_ENABLED(MMC_SUPPORT)
+#if !IS_ENABLED(CONFIG_SPL_BUILD) || CONFIG_IS_ENABLED(MMC)
 	case HCLK_SDMMC:
 	case HCLK_EMMC:
 		ret = rk3368_mmc_set_clk(clk, rate);
@@ -479,7 +510,7 @@ static ulong rk3368_clk_set_rate(struct clk *clk, ulong rate)
 #if CONFIG_IS_ENABLED(GMAC_ROCKCHIP)
 	case SCLK_MAC:
 		/* select the external clock */
-		ret = rk3368_gmac_set_clk(priv->cru, clk->id, rate);
+		ret = rk3368_gmac_set_clk(priv->cru, rate);
 		break;
 #endif
 	case SCLK_SARADC:
@@ -492,16 +523,67 @@ static ulong rk3368_clk_set_rate(struct clk *clk, ulong rate)
 	return ret;
 }
 
+static int __maybe_unused rk3368_gmac_set_parent(struct clk *clk, struct clk *parent)
+{
+	struct rk3368_clk_priv *priv = dev_get_priv(clk->dev);
+	struct rk3368_cru *cru = priv->cru;
+	const char *clock_output_name;
+	int ret;
+
+	/*
+	 * If the requested parent is in the same clock-controller and
+	 * the id is SCLK_MAC ("sclk_mac"), switch to the internal
+	 * clock.
+	 */
+	if ((parent->dev == clk->dev) && (parent->id == SCLK_MAC)) {
+		debug("%s: switching GAMC to SCLK_MAC\n", __func__);
+		rk_clrreg(&cru->clksel_con[43], GMAC_MUX_SEL_EXTCLK);
+		return 0;
+	}
+
+	/*
+	 * Otherwise, we need to check the clock-output-names of the
+	 * requested parent to see if the requested id is "ext_gmac".
+	 */
+	ret = dev_read_string_index(parent->dev, "clock-output-names",
+				    parent->id, &clock_output_name);
+	if (ret < 0)
+		return -ENODATA;
+
+	/* If this is "ext_gmac", switch to the external clock input */
+	if (!strcmp(clock_output_name, "ext_gmac")) {
+		debug("%s: switching GMAC to external clock\n", __func__);
+		rk_setreg(&cru->clksel_con[43], GMAC_MUX_SEL_EXTCLK);
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
+static int __maybe_unused rk3368_clk_set_parent(struct clk *clk, struct clk *parent)
+{
+	switch (clk->id) {
+	case SCLK_MAC:
+		return rk3368_gmac_set_parent(clk, parent);
+	}
+
+	debug("%s: unsupported clk %ld\n", __func__, clk->id);
+	return -ENOENT;
+}
+
 static struct clk_ops rk3368_clk_ops = {
 	.get_rate = rk3368_clk_get_rate,
 	.set_rate = rk3368_clk_set_rate,
+#if CONFIG_IS_ENABLED(OF_REAL)
+	.set_parent = rk3368_clk_set_parent,
+#endif
 };
 
 static int rk3368_clk_probe(struct udevice *dev)
 {
 	struct rk3368_clk_priv __maybe_unused *priv = dev_get_priv(dev);
 #if CONFIG_IS_ENABLED(OF_PLATDATA)
-	struct rk3368_clk_plat *plat = dev_get_platdata(dev);
+	struct rk3368_clk_plat *plat = dev_get_plat(dev);
 
 	priv->cru = map_sysmem(plat->dtd.reg[0], plat->dtd.reg[1]);
 #endif
@@ -512,13 +594,13 @@ static int rk3368_clk_probe(struct udevice *dev)
 	return 0;
 }
 
-static int rk3368_clk_ofdata_to_platdata(struct udevice *dev)
+static int rk3368_clk_of_to_plat(struct udevice *dev)
 {
-#if !CONFIG_IS_ENABLED(OF_PLATDATA)
-	struct rk3368_clk_priv *priv = dev_get_priv(dev);
+	if (CONFIG_IS_ENABLED(OF_REAL)) {
+		struct rk3368_clk_priv *priv = dev_get_priv(dev);
 
-	priv->cru = dev_read_addr_ptr(dev);
-#endif
+		priv->cru = dev_read_addr_ptr(dev);
+	}
 
 	return 0;
 }
@@ -540,8 +622,15 @@ static int rk3368_clk_bind(struct udevice *dev)
 						    glb_srst_fst_val);
 		priv->glb_srst_snd_value = offsetof(struct rk3368_cru,
 						    glb_srst_snd_val);
-		sys_child->priv = priv;
+		dev_set_priv(sys_child, priv);
 	}
+
+#if CONFIG_IS_ENABLED(RESET_ROCKCHIP)
+	ret = offsetof(struct rk3368_cru, softrst_con[0]);
+	ret = rockchip_reset_bind(dev, ret, 15);
+	if (ret)
+		debug("Warning: software reset driver bind faile\n");
+#endif
 
 	return ret;
 }
@@ -555,11 +644,11 @@ U_BOOT_DRIVER(rockchip_rk3368_cru) = {
 	.name		= "rockchip_rk3368_cru",
 	.id		= UCLASS_CLK,
 	.of_match	= rk3368_clk_ids,
-	.priv_auto_alloc_size = sizeof(struct rk3368_clk_priv),
+	.priv_auto	= sizeof(struct rk3368_clk_priv),
 #if CONFIG_IS_ENABLED(OF_PLATDATA)
-	.platdata_auto_alloc_size = sizeof(struct rk3368_clk_plat),
+	.plat_auto	= sizeof(struct rk3368_clk_plat),
 #endif
-	.ofdata_to_platdata = rk3368_clk_ofdata_to_platdata,
+	.of_to_plat = rk3368_clk_of_to_plat,
 	.ops		= &rk3368_clk_ops,
 	.bind		= rk3368_clk_bind,
 	.probe		= rk3368_clk_probe,

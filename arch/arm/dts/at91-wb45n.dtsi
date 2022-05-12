@@ -88,17 +88,11 @@
 };
 
 &macb0 {
-	pinctrl-names = "default";
-	pinctrl-0 =	<&pinctrl_macb0_rmii>;
-
 	phy-mode = "rmii";
-
-	status = "okay";
 };
 
 &dbgu {
 	u-boot,dm-pre-reloc;
-	status = "okay";
 };
 
 &nand0 {

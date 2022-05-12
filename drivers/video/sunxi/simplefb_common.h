@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2017 Icenowy Zheng <icenowy@aosc.io>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __SIMPLEFB_COMMON_H
@@ -15,7 +14,7 @@
  *
  * @blob: device tree blob
  * @pipeline: display pipeline
- * @return device node offset in blob, or negative values if failed
+ * Return: device node offset in blob, or negative values if failed
  */
 int sunxi_simplefb_fdt_match(void *blob, const char *pipeline);
 

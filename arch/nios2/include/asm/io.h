@@ -1,12 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2004, Psyent Corporation <www.psyent.com>
  * Scott McNutt <smcnutt@psyent.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_NIOS2_IO_H_
 #define __ASM_NIOS2_IO_H_
+
+#include <asm/global_data.h>
 
 static inline void sync(void)
 {
@@ -171,5 +172,6 @@ static inline void outsl (unsigned long port, const void *src, unsigned long cou
 #define memcpy_toio(a, b, c)		memcpy((void *)(a), (b), (c))
 
 #include <asm-generic/io.h>
+#include <asm/global_data.h>
 
 #endif /* __ASM_NIOS2_IO_H_ */

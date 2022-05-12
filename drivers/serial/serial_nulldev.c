@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 National Instruments
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -19,11 +18,6 @@ static int nulldev_serial_getc(struct udevice *dev)
 }
 
 static int nulldev_serial_pending(struct udevice *dev, bool input)
-{
-	return 0;
-}
-
-static int nulldev_serial_input(struct udevice *dev)
 {
 	return 0;
 }

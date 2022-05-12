@@ -1,11 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2017 NXP
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
 #include <command.h>
+#include <net.h>
 #include <netdev.h>
 #include <malloc.h>
 #include <fsl_mdio.h>
@@ -18,9 +18,8 @@
 #include <fsl-mc/fsl_mc.h>
 #include <fsl-mc/ldpaa_wriop.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
-int board_eth_init(bd_t *bis)
+#ifndef CONFIG_DM_ETH
+int board_eth_init(struct bd_info *bis)
 {
 #if defined(CONFIG_FSL_MC_ENET)
 	int i, interface;
@@ -53,21 +52,22 @@ int board_eth_init(bd_t *bis)
 	switch (srds_s1) {
 	case 0x1D:
 		/*
-		 * XFI does not need a PHY to work, but to avoid U-boot use
-		 * default PHY address which is zero to a MAC when it found
-		 * a MAC has no PHY address, we give a PHY address to XFI
+		 * 10GBase-R does not need a PHY to work, but to avoid U-boot
+		 * use default PHY address which is zero to a MAC when it found
+		 * a MAC has no PHY address, we give a PHY address to 10GBase-R
 		 * MAC error.
 		 */
-		wriop_set_phy_address(WRIOP1_DPMAC1, 0x0a);
-		wriop_set_phy_address(WRIOP1_DPMAC2, AQ_PHY_ADDR1);
-		wriop_set_phy_address(WRIOP1_DPMAC3, QSGMII1_PORT1_PHY_ADDR);
-		wriop_set_phy_address(WRIOP1_DPMAC4, QSGMII1_PORT2_PHY_ADDR);
-		wriop_set_phy_address(WRIOP1_DPMAC5, QSGMII1_PORT3_PHY_ADDR);
-		wriop_set_phy_address(WRIOP1_DPMAC6, QSGMII1_PORT4_PHY_ADDR);
-		wriop_set_phy_address(WRIOP1_DPMAC7, QSGMII2_PORT1_PHY_ADDR);
-		wriop_set_phy_address(WRIOP1_DPMAC8, QSGMII2_PORT2_PHY_ADDR);
-		wriop_set_phy_address(WRIOP1_DPMAC9, QSGMII2_PORT3_PHY_ADDR);
-		wriop_set_phy_address(WRIOP1_DPMAC10, QSGMII2_PORT4_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC1, 0, 0x0a);
+		wriop_set_phy_address(WRIOP1_DPMAC2, 0, AQ_PHY_ADDR1);
+		wriop_set_phy_address(WRIOP1_DPMAC3, 0, QSGMII1_PORT1_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC4, 0, QSGMII1_PORT2_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC5, 0, QSGMII1_PORT3_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC6, 0, QSGMII1_PORT4_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC7, 0, QSGMII2_PORT1_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC8, 0, QSGMII2_PORT2_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC9, 0, QSGMII2_PORT3_PHY_ADDR);
+		wriop_set_phy_address(WRIOP1_DPMAC10, 0,
+				      QSGMII2_PORT4_PHY_ADDR);
 
 		break;
 	default:
@@ -96,6 +96,7 @@ int board_eth_init(bd_t *bis)
 
 	return pci_eth_init(bis);
 }
+#endif
 
 #if defined(CONFIG_RESET_PHY_R)
 void reset_phy(void)

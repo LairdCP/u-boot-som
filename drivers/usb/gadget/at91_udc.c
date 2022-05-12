@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * from linux:
  * c94e289f195e: usb: gadget: remove incorrect __init/__exit annotations
@@ -7,14 +8,15 @@
  * Copyright (C) 2004 by Thomas Rathbone
  * Copyright (C) 2005 by HP Labs
  * Copyright (C) 2005 by David Brownell
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #undef	VERBOSE_DEBUG
 #undef	PACKET_TRACE
 
 #include <common.h>
+#include <dm/devres.h>
+#include <linux/bug.h>
+#include <linux/err.h>
 #include <linux/errno.h>
 #include <asm/io.h>
 #include <asm/gpio.h>
@@ -25,7 +27,6 @@
 #include <linux/usb/gadget.h>
 #include <linux/usb/at91_udc.h>
 #include <malloc.h>
-#include <usb/lin_gadget_compat.h>
 
 #include <dm.h>
 #include <dm/device.h>
@@ -352,6 +353,7 @@ ok:
 	__raw_writel(tmp, ep->creg);
 
 	ep->ep.maxpacket = maxpacket;
+	ep->ep.desc = desc;
 
 	/*
 	 * reset/init endpoint fifo.  NOTE:  leaves fifo_bank alone,
@@ -413,6 +415,9 @@ at91_ep_alloc_request(struct usb_ep *_ep, gfp_t gfp_flags)
 static void at91_ep_free_request(struct usb_ep *_ep, struct usb_request *_req)
 {
 	struct at91_request *req;
+
+	if (!_req)
+		return;
 
 	req = container_of(_req, struct at91_request, req);
 	BUG_ON(!list_empty(&req->queue));
@@ -713,6 +718,14 @@ static void clk_on(struct at91_udc *udc)
 	if (udc->clocked)
 		return;
 	udc->clocked = 1;
+
+	/* Enable PLLB */
+	at91_pllb_clk_enable(get_pllb_init());
+
+	/* Enable UDPCK clock, MCK is enabled in at91_clock_init() */
+	at91_periph_clk_enable(ATMEL_ID_UDP);
+
+	at91_system_clk_enable(AT91SAM926x_PMC_UDP);
 }
 
 static void clk_off(struct at91_udc *udc)
@@ -721,6 +734,12 @@ static void clk_off(struct at91_udc *udc)
 		return;
 	udc->clocked = 0;
 	udc->gadget.speed = USB_SPEED_UNKNOWN;
+
+	at91_system_clk_disable(AT91SAM926x_PMC_UDP);
+
+	at91_periph_clk_disable(ATMEL_ID_UDP);
+
+	at91_pllb_clk_disable();
 }
 
 /*
@@ -1433,6 +1452,8 @@ static const struct at91_udc_caps at91sam9261_udc_caps = {
 };
 #endif
 
+#if ! CONFIG_IS_ENABLED(DM_USB_GADGET)
+
 int usb_gadget_handle_interrupts(int index)
 {
 	struct at91_udc *udc = controller;
@@ -1485,6 +1506,7 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 
 	return 0;
 }
+#endif
 
 int at91_udc_probe(struct at91_udc_data *pdata)
 {
@@ -1549,35 +1571,36 @@ int at91_udc_probe(struct at91_udc_data *pdata)
 	return 0;
 }
 
-#ifdef CONFIG_DM_USB
-static struct at91_udc_data udc_data  = {
-	.baseaddr = ATMEL_BASE_UDP0,
+#if CONFIG_IS_ENABLED(DM_USB_GADGET)
+
+int dm_usb_gadget_handle_interrupts(struct udevice *dev)
+{
+	struct at91_udc *udc = controller;
+
+	return at91_udc_irq(udc);
+}
+
+static struct at91_udc_data udc_data = {
+	.baseaddr	= ATMEL_BASE_UDP0,
 };
 
 static int at91_udc_usb_probe(struct udevice *dev)
 {
-	/* Enable PLLB */
-	at91_pllb_clk_enable(get_pllb_init());
+	int ret;
 
-	/* Enable UDPCK clock, MCK is enabled in at91_clock_init() */
-	at91_periph_clk_enable(ATMEL_ID_UDP);
+	ret = at91_udc_probe(&udc_data);
+	if (ret)
+		return ret;
 
-	at91_system_clk_enable(AT91SAM926x_PMC_UDP);
-
-	return at91_udc_probe(&udc_data);
+	return usb_add_gadget_udc((struct device *)dev, &controller->gadget);
 }
 
 static int at91_udc_usb_remove(struct udevice *dev)
 {
-	struct at91_udc *udc = controller;
+	usb_del_gadget_udc(&controller->gadget);
 
-	at91_stop(&udc->gadget);
-
-	at91_system_clk_disable(AT91SAM926x_PMC_UDP);
-
-	at91_periph_clk_disable(ATMEL_ID_UDP);
-
-	at91_pllb_clk_disable();
+	kfree(controller);
+	controller = NULL;
 
 	return 0;
 }
@@ -1587,13 +1610,12 @@ static const struct udevice_id at91_udc_ids[] = {
 	{ }
 };
 
-U_BOOT_DRIVER(usb_usba_udc) = {
+U_BOOT_DRIVER(at91_udc) = {
 	.name		= "at91_udc",
-	.id		= UCLASS_USB_DEV_GENERIC,
+	.id		= UCLASS_USB_GADGET_GENERIC,
 	.of_match	= at91_udc_ids,
 	.probe		= at91_udc_usb_probe,
 	.remove		= at91_udc_usb_remove,
-	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
-	.flags	= DM_FLAG_OS_PREPARE,
+	.plat_auto	= sizeof(struct usb_plat),
 };
 #endif

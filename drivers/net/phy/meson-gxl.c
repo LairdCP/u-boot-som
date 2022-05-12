@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Meson GXL Internal PHY Driver
  *
  * Copyright (C) 2015 Amlogic, Inc. All rights reserved.
  * Copyright (C) 2016 BayLibre, SAS. All rights reserved.
  * Author: Neil Armstrong <narmstrong@baylibre.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <config.h>
 #include <common.h>
@@ -74,7 +73,7 @@ restart_aneg:
 
 		if (!(wol & BIT(12)) ||
 			((exp & EXPANSION_NWAY) && !(lpa & LPA_LPACK))) {
-			
+
 			/* Looks like aneg failed after all */
 			if (!retries) {
 				printf("%s LPA corruption max attempts\n",

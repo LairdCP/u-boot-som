@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013 Atmel Corporation
  *		      Bo Shen <voice.shen@atmel.com>
  *
  * Copyright (C) 2015 Atmel Corporation
  *		      Wenyou Yang <wenyou.yang@atmel.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ATMEL_MPDDRC_H__
@@ -18,10 +17,11 @@ struct atmel_mpddrc_config {
 	u32 tpr0;
 	u32 tpr1;
 	u32 tpr2;
-	u32 md;
 	u32 lpr;
-	u32 tim_cal;
+	u32 md;
+	u32 lpddr23_lpr;
 	u32 cal_mr4;
+	u32 tim_cal;
 };
 
 /*
@@ -66,19 +66,20 @@ struct atmel_mpddr {
 	u32 version;		/* 0xfc: IP version */
 };
 
-int ddr2_init(const unsigned int base,
-	      const unsigned int ram_address,
-	      const struct atmel_mpddrc_config *mpddr_value);
-
-int ddr3_init(const unsigned int base,
-	      const unsigned int ram_address,
-	      const struct atmel_mpddrc_config *mpddr_value);
 
 int lpddr1_init(const unsigned int base,
 	      const unsigned int ram_address,
 	      const struct atmel_mpddrc_config *mpddr_value);
 
+int ddr2_init(const unsigned int base,
+	      const unsigned int ram_address,
+	      const struct atmel_mpddrc_config *mpddr_value);
+
 int lpddr2_init(const unsigned int base,
+		const unsigned int ram_address,
+		const struct atmel_mpddrc_config *mpddr_value);
+
+int ddr3_init(const unsigned int base,
 	      const unsigned int ram_address,
 	      const struct atmel_mpddrc_config *mpddr_value);
 
@@ -91,7 +92,11 @@ int lpddr2_init(const unsigned int base,
 #define ATMEL_MPDDRC_MR_MODE_EXT_LMR_CMD	0x5
 #define ATMEL_MPDDRC_MR_MODE_DEEP_CMD		0x6
 #define ATMEL_MPDDRC_MR_MODE_LPDDR2_CMD		0x7
-#define ATMEL_MPDDRC_MR_MODE_MRS(value)	(value << 8)
+#define ATMEL_MPDDRC_MR_MRS(v)			(((v) & 0xFF) << 0x8)
+
+/* Bit field in refresh timer register */
+#define ATMEL_MPDDRC_RTR_ADJ_REF		(0x1 << 16)
+#define ATMEL_MPDDRC_RTR_MR4VALUE(v)		(((v) & 0x7) << 20)
 
 /* Bit field in configuration register */
 #define ATMEL_MPDDRC_CR_NC_MASK			0x3
@@ -113,7 +118,6 @@ int lpddr2_init(const unsigned int base,
 #define ATMEL_MPDDRC_CR_DLL_RESET_ENABLED	(0x1 << 7)
 #define ATMEL_MPDDRC_CR_DIC_DS			(0x1 << 8)
 #define ATMEL_MPDDRC_CR_DIS_DLL			(0x1 << 9)
-#define ATMEL_MPDDRC_CR_ZQ_MASK			(0x3 << 10)
 #define ATMEL_MPDDRC_CR_ZQ_INIT			(0x0 << 10)
 #define ATMEL_MPDDRC_CR_ZQ_LONG			(0x1 << 10)
 #define ATMEL_MPDDRC_CR_ZQ_SHORT		(0x2 << 10)
@@ -230,17 +234,15 @@ int lpddr2_init(const unsigned int base,
 #define ATMEL_MPDDRC_DDR2_DIS_ANTICIP_READ	(0x1UL << 2)
 #define ATMEL_MPDDRC_DDR2_EN_CALIB	(0x1UL << 5)
 
-//* ------- MPDDRC_LPDDR2_LPR (offset: 0x28) */
-#define ATMEL_MPDDRC_LPDDR2_BK_MASK_PASR(value)	(value << 0)
-#define ATMEL_MPDDRC_LPDDR2_SEG_MASK(value)		(value << 8)
-#define ATMEL_MPDDRC_LPDDR2_DS(value)			(value << 24)
+/* Bit field in LPDDR2 - LPDDR3 Low Power Register */
+#define ATMEL_MPDDRC_LPDDR23_LPR_DS(x)			(((x) & 0xf) << 24)
 
-/* -------- MPDDRC_LPDDR2_CAL_MR4: (MPDDRC Offset: 0x2c) Calibration and MR4 Register --------*/
-#define ATMEL_MPDDRC_CAL_MR4_COUNT_CAL_MASK	(0xFFFFUL)
-#define ATMEL_MPDDRC_CAL_MR4_COUNT_CAL(value)	(((value) & AT91C_DDRC2_COUNT_CAL_MASK) << 0)
+/* Bit field in CAL_MR4 Calibration and MR4 Register */
+#define ATMEL_MPDDRC_CAL_MR4_COUNT_CAL(x)		(((x) & 0xffff) << 0)
+#define ATMEL_MPDDRC_CAL_MR4_MR4R(x)			(((x) & 0xffff) << 16)
 
-/* -------- MPDDRC_LPDDR2_TIM_CAL : (MPDDRC Offset: 0x30) */
-#define ATMEL_MPDDRC_TIM_CAL_ZQCS(value)	(value << 0)
+/* Bit field in TIM_CAL Timing Calibration Register */
+#define ATMEL_MPDDRC_CALR_ZQCS(x)			(((x) & 0xff) << 0)
 
 /* -------- HDDRSDRC2_LPR : (HDDRSDRC2 Offset: 0x1c) --------*/
 #define ATMEL_MPDDRC_LPR_LPCB_MASK	(0x3UL << 0)

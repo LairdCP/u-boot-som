@@ -1,16 +1,21 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
+
+#define LOG_CATEGORY UCLASS_BLK
 
 #include <common.h>
 #include <blk.h>
 #include <dm.h>
+#include <log.h>
+#include <malloc.h>
+#include <part.h>
 #include <dm/device-internal.h>
 #include <dm/lists.h>
 #include <dm/uclass-internal.h>
+#include <linux/err.h>
 
 static const char *if_typename_str[IF_TYPE_COUNT] = {
 	[IF_TYPE_IDE]		= "ide",
@@ -22,8 +27,11 @@ static const char *if_typename_str[IF_TYPE_COUNT] = {
 	[IF_TYPE_SD]		= "sd",
 	[IF_TYPE_SATA]		= "sata",
 	[IF_TYPE_HOST]		= "host",
-	[IF_TYPE_SYSTEMACE]	= "ace",
 	[IF_TYPE_NVME]		= "nvme",
+	[IF_TYPE_EFI_MEDIA]	= "efi",
+	[IF_TYPE_EFI_LOADER]	= "efiloader",
+	[IF_TYPE_VIRTIO]	= "virtio",
+	[IF_TYPE_PVBLOCK]	= "pvblock",
 };
 
 static enum uclass_id if_type_uclass_id[IF_TYPE_COUNT] = {
@@ -37,7 +45,10 @@ static enum uclass_id if_type_uclass_id[IF_TYPE_COUNT] = {
 	[IF_TYPE_SATA]		= UCLASS_AHCI,
 	[IF_TYPE_HOST]		= UCLASS_ROOT,
 	[IF_TYPE_NVME]		= UCLASS_NVME,
-	[IF_TYPE_SYSTEMACE]	= UCLASS_INVALID,
+	[IF_TYPE_EFI_MEDIA]	= UCLASS_EFI_MEDIA,
+	[IF_TYPE_EFI_LOADER]	= UCLASS_EFI_LOADER,
+	[IF_TYPE_VIRTIO]	= UCLASS_VIRTIO,
+	[IF_TYPE_PVBLOCK]	= UCLASS_PVBLOCK,
 };
 
 static enum if_type if_typename_to_iftype(const char *if_typename)
@@ -72,7 +83,7 @@ struct blk_desc *blk_get_devnum_by_type(enum if_type if_type, int devnum)
 	ret = blk_get_device(if_type, devnum, &dev);
 	if (ret)
 		return NULL;
-	desc = dev_get_uclass_platdata(dev);
+	desc = dev_get_uclass_plat(dev);
 
 	return desc;
 }
@@ -107,7 +118,7 @@ struct blk_desc *blk_get_devnum_by_typename(const char *if_typename, int devnum)
 	if (ret)
 		return NULL;
 	uclass_foreach_dev(dev, uc) {
-		struct blk_desc *desc = dev_get_uclass_platdata(dev);
+		struct blk_desc *desc = dev_get_uclass_plat(dev);
 
 		debug("%s: if_type=%d, devnum=%d: %s, %d, %d\n", __func__,
 		      if_type, devnum, dev->name, desc->if_type, desc->devnum);
@@ -133,12 +144,35 @@ struct blk_desc *blk_get_devnum_by_typename(const char *if_typename, int devnum)
 }
 
 /**
+ * blk_get_by_device() - Get the block device descriptor for the given device
+ * @dev:	Instance of a storage device
+ *
+ * Return: With block device descriptor on success , NULL if there is no such
+ *	   block device.
+ */
+struct blk_desc *blk_get_by_device(struct udevice *dev)
+{
+	struct udevice *child_dev;
+
+	device_foreach_child(child_dev, dev) {
+		if (device_get_uclass_id(child_dev) != UCLASS_BLK)
+			continue;
+
+		return dev_get_uclass_plat(child_dev);
+	}
+
+	debug("%s: No block device found\n", __func__);
+
+	return NULL;
+}
+
+/**
  * get_desc() - Get the block device descriptor for the given device number
  *
  * @if_type:	Interface type
  * @devnum:	Device number (0 = first)
  * @descp:	Returns block device descriptor on success
- * @return 0 on success, -ENODEV if there is no such device and no device
+ * Return: 0 on success, -ENODEV if there is no such device and no device
  * with a higher device number, -ENOENT if there is no such device but there
  * is one with a higher number, or other -ve on other error.
  */
@@ -154,7 +188,7 @@ static int get_desc(enum if_type if_type, int devnum, struct blk_desc **descp)
 	if (ret)
 		return ret;
 	uclass_foreach_dev(dev, uc) {
-		struct blk_desc *desc = dev_get_uclass_platdata(dev);
+		struct blk_desc *desc = dev_get_uclass_plat(dev);
 
 		debug("%s: if_type=%d, devnum=%d: %s, %d, %d\n", __func__,
 		      if_type, devnum, dev->name, desc->if_type, desc->devnum);
@@ -338,7 +372,7 @@ int blk_first_device(int if_type, struct udevice **devp)
 	if (!*devp)
 		return -ENODEV;
 	do {
-		desc = dev_get_uclass_platdata(*devp);
+		desc = dev_get_uclass_plat(*devp);
 		if (desc->if_type == if_type)
 			return 0;
 		ret = uclass_find_next_device(devp);
@@ -354,7 +388,7 @@ int blk_next_device(struct udevice **devp)
 	struct blk_desc *desc;
 	int ret, if_type;
 
-	desc = dev_get_uclass_platdata(*devp);
+	desc = dev_get_uclass_plat(*devp);
 	if_type = desc->if_type;
 	do {
 		ret = uclass_find_next_device(devp);
@@ -362,7 +396,7 @@ int blk_next_device(struct udevice **devp)
 			return ret;
 		if (!*devp)
 			return -ENODEV;
-		desc = dev_get_uclass_platdata(*devp);
+		desc = dev_get_uclass_plat(*devp);
 		if (desc->if_type == if_type)
 			return 0;
 	} while (1);
@@ -378,7 +412,7 @@ int blk_find_device(int if_type, int devnum, struct udevice **devp)
 	if (ret)
 		return ret;
 	uclass_foreach_dev(dev, uc) {
-		struct blk_desc *desc = dev_get_uclass_platdata(dev);
+		struct blk_desc *desc = dev_get_uclass_plat(dev);
 
 		debug("%s: if_type=%d, devnum=%d: %s, %d, %d\n", __func__,
 		      if_type, devnum, dev->name, desc->if_type, desc->devnum);
@@ -449,15 +483,6 @@ unsigned long blk_derase(struct blk_desc *block_dev, lbaint_t start,
 	return ops->erase(dev, start, blkcnt);
 }
 
-int blk_prepare_device(struct udevice *dev)
-{
-	struct blk_desc *desc = dev_get_uclass_platdata(dev);
-
-	part_init(desc);
-
-	return 0;
-}
-
 int blk_get_from_parent(struct udevice *parent, struct udevice **devp)
 {
 	struct udevice *dev;
@@ -495,7 +520,7 @@ int blk_find_max_devnum(enum if_type if_type)
 	if (ret)
 		return ret;
 	uclass_foreach_dev(dev, uc) {
-		struct blk_desc *desc = dev_get_uclass_platdata(dev);
+		struct blk_desc *desc = dev_get_uclass_plat(dev);
 
 		if (desc->if_type == if_type && desc->devnum > max_devnum)
 			max_devnum = desc->devnum;
@@ -504,7 +529,7 @@ int blk_find_max_devnum(enum if_type if_type)
 	return max_devnum;
 }
 
-static int blk_next_free_devnum(enum if_type if_type)
+int blk_next_free_devnum(enum if_type if_type)
 {
 	int ret;
 
@@ -517,6 +542,55 @@ static int blk_next_free_devnum(enum if_type if_type)
 	return ret + 1;
 }
 
+static int blk_flags_check(struct udevice *dev, enum blk_flag_t req_flags)
+{
+	const struct blk_desc *desc = dev_get_uclass_plat(dev);
+	enum blk_flag_t flags;
+
+	flags = desc->removable ? BLKF_REMOVABLE : BLKF_FIXED;
+
+	return flags & req_flags ? 0 : 1;
+}
+
+int blk_first_device_err(enum blk_flag_t flags, struct udevice **devp)
+{
+	int ret;
+
+	for (ret = uclass_first_device_err(UCLASS_BLK, devp);
+	     !ret;
+	     ret = uclass_next_device_err(devp)) {
+		if (!blk_flags_check(*devp, flags))
+			return 0;
+	}
+
+	return -ENODEV;
+}
+
+int blk_next_device_err(enum blk_flag_t flags, struct udevice **devp)
+{
+	int ret;
+
+	for (ret = uclass_next_device_err(devp);
+	     !ret;
+	     ret = uclass_next_device_err(devp)) {
+		if (!blk_flags_check(*devp, flags))
+			return 0;
+	}
+
+	return -ENODEV;
+}
+
+int blk_count_devices(enum blk_flag_t flag)
+{
+	struct udevice *dev;
+	int count = 0;
+
+	blk_foreach_probe(flag, dev)
+		count++;
+
+	return count;
+}
+
 static int blk_claim_devnum(enum if_type if_type, int devnum)
 {
 	struct udevice *dev;
@@ -527,7 +601,7 @@ static int blk_claim_devnum(enum if_type if_type, int devnum)
 	if (ret)
 		return ret;
 	uclass_foreach_dev(dev, uc) {
-		struct blk_desc *desc = dev_get_uclass_platdata(dev);
+		struct blk_desc *desc = dev_get_uclass_plat(dev);
 
 		if (desc->if_type == if_type && desc->devnum == devnum) {
 			int next = blk_next_free_devnum(if_type);
@@ -562,9 +636,10 @@ int blk_create_device(struct udevice *parent, const char *drv_name,
 	ret = device_bind_driver(parent, drv_name, name, &dev);
 	if (ret)
 		return ret;
-	desc = dev_get_uclass_platdata(dev);
+	desc = dev_get_uclass_plat(dev);
 	desc->if_type = if_type;
 	desc->blksz = blksz;
+	desc->log2blksz = LOG2(desc->blksz);
 	desc->lba = lba;
 	desc->part_type = PART_TYPE_UNKNOWN;
 	desc->bdev = dev;
@@ -597,6 +672,19 @@ int blk_create_devicef(struct udevice *parent, const char *drv_name,
 	return 0;
 }
 
+int blk_probe_or_unbind(struct udevice *dev)
+{
+	int ret;
+
+	ret = device_probe(dev);
+	if (ret) {
+		log_debug("probing %s failed\n", dev->name);
+		device_unbind(dev);
+	}
+
+	return ret;
+}
+
 int blk_unbind_all(int if_type)
 {
 	struct uclass *uc;
@@ -607,7 +695,7 @@ int blk_unbind_all(int if_type)
 	if (ret)
 		return ret;
 	uclass_foreach_dev_safe(dev, next, uc) {
-		struct blk_desc *desc = dev_get_uclass_platdata(dev);
+		struct blk_desc *desc = dev_get_uclass_plat(dev);
 
 		if (desc->if_type == if_type) {
 			ret = device_remove(dev, DM_REMOVE_NORMAL);
@@ -622,8 +710,21 @@ int blk_unbind_all(int if_type)
 	return 0;
 }
 
+static int blk_post_probe(struct udevice *dev)
+{
+	if (IS_ENABLED(CONFIG_PARTITIONS) &&
+	    IS_ENABLED(CONFIG_HAVE_BLOCK_DEVICE)) {
+		struct blk_desc *desc = dev_get_uclass_plat(dev);
+
+		part_init(desc);
+	}
+
+	return 0;
+}
+
 UCLASS_DRIVER(blk) = {
 	.id		= UCLASS_BLK,
 	.name		= "blk",
-	.per_device_platdata_auto_alloc_size = sizeof(struct blk_desc),
+	.post_probe	= blk_post_probe,
+	.per_device_plat_auto	= sizeof(struct blk_desc),
 };

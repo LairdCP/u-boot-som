@@ -1,0 +1,26 @@
+config ATMEL_AES
+	bool "Atmel AES Engine"
+	depends on AES
+	default y if CPU_V7A || SAM9X60
+	help
+	  Select this option to enable a driver for using the AES engine in
+	  the Microchip/Atmel SoCs.
+
+	  Enabling this allows the use of SHA operations in hardware without
+	  requiring the SHA software implementations. It also improves performance
+	  and saves code size.
+
+config ATMEL_SHA
+	bool "Atmel Hash Engine"
+	depends on SHA1 || SHA256 || SHA512
+	select SHA_HW_ACCEL
+	select SHA512_HW_ACCEL if SHA512
+	select SHA_PROG_HW_ACCEL
+	default y if CPU_V7A || SAM9X60
+	help
+	  Select this option to enable a driver for using the SHA engine in
+	  the Microchip/Atmel SoCs.
+
+	  Enabling this allows the use of SHA operations in hardware without
+	  requiring the SHA software implementations. It also improves performance
+	  and saves code size.

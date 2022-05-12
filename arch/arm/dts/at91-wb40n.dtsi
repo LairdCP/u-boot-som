@@ -156,12 +156,10 @@
 
 	phy-mode = "rmii";
 
-	status = "okay";
 };
 
 &dbgu {
 	u-boot,dm-pre-reloc;
-	status = "okay";
 };
 
 &nand0 {

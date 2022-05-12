@@ -6,7 +6,9 @@
  */
 
 #include <common.h>
-#include <environment.h>
+#include <init.h>
+#include <env.h>
+#include <net.h>
 #include <debug_uart.h>
 
 #include <asm/arch/at91_common.h>
@@ -16,7 +18,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /* ------------------------------------------------------------------------- */
 /*
- * Miscelaneous platform dependent initialisations
+ * Miscelaneous platform dependent initializations
  */
 
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT

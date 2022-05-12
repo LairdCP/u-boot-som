@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * [origin: Linux kernel include/asm-arm/arch-at91/gpio.h]
  *
  *  Copyright (C) 2005 HP Labs
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_AT91_GPIO_H
@@ -254,7 +253,7 @@ static inline unsigned at91_gpio_to_pin(unsigned gpio)
 }
 
 /* Platform data for each GPIO port */
-struct at91_port_platdata {
+struct at91_port_plat {
 	uint32_t base_addr;
 	const char *bank_name;
 };

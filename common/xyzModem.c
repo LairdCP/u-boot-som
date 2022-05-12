@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: eCos-2.0
 /*
  *==========================================================================
  *
@@ -5,8 +6,6 @@
  *
  *      RedBoot stream handler for xyzModem protocol
  *
- *==========================================================================
- * SPDX-License-Identifier:	eCos-2.0
  *==========================================================================
  *#####DESCRIPTIONBEGIN####
  *
@@ -25,13 +24,15 @@
 #include <common.h>
 #include <xyzModem.h>
 #include <stdarg.h>
-#include <crc.h>
+#include <u-boot/crc.h>
+#include <watchdog.h>
 
 /* Assumption - run xyzModem protocol over the console port */
 
 /* Values magic to the protocol */
 #define SOH 0x01
 #define STX 0x02
+#define ETX 0x03		/* ^C for interrupt */
 #define EOT 0x04
 #define ACK 0x06
 #define BSP 0x08
@@ -64,6 +65,7 @@ CYGACC_COMM_IF_GETC_TIMEOUT (char chan, char *c)
 {
 
   ulong now = get_timer(0);
+  WATCHDOG_RESET();
   while (!tstc ())
     {
       if (get_timer(now) > xyzModem_CHAR_TIMEOUT)
@@ -71,7 +73,7 @@ CYGACC_COMM_IF_GETC_TIMEOUT (char chan, char *c)
     }
   if (tstc ())
     {
-      *c = getc ();
+      *c = getchar();
       return 1;
     }
   return 0;
@@ -172,7 +174,7 @@ parse_num (char *s, unsigned long *val, char **es, char *delim)
 }
 
 
-#ifdef DEBUG
+#if defined(DEBUG) && !CONFIG_IS_ENABLED(USE_TINY_PRINTF)
 /*
  * Note: this debug setup works by storing the strings in a fixed buffer
  */
@@ -181,15 +183,16 @@ static char *zm_out = zm_debug_buf;
 static char *zm_out_start = zm_debug_buf;
 
 static int
-zm_dprintf (char *fmt, ...)
+zm_dprintf(char *fmt, ...)
 {
-  int len;
-  va_list args;
+	int len;
+	va_list args;
 
-  va_start (args, fmt);
-  len = diag_vsprintf (zm_out, fmt, args);
-  zm_out += len;
-  return len;
+	va_start(args, fmt);
+	len = diag_vsprintf(zm_out, fmt, args);
+	va_end(args);
+	zm_out += len;
+	return len;
 }
 
 static void
@@ -281,6 +284,7 @@ xyzModem_get_hdr (void)
 	      hdr_found = true;
 	      break;
 	    case CAN:
+	    case ETX:
 	      xyz.total_CAN++;
 	      ZM_DEBUG (zm_dump (__LINE__));
 	      if (++can_total == xyzModem_CAN_COUNT)
@@ -492,7 +496,7 @@ xyzModem_stream_read (char *buf, int size, int *err)
   total = 0;
   stat = xyzModem_cancel;
   /* Try and get 'size' bytes into the buffer */
-  while (!xyz.at_eof && (size > 0))
+  while (!xyz.at_eof && xyz.len >= 0 && (size > 0))
     {
       if (xyz.len == 0)
 	{
@@ -570,6 +574,8 @@ xyzModem_stream_read (char *buf, int size, int *err)
 		      CYGACC_COMM_IF_PUTC (*xyz.__chan, ACK);
 		      ZM_DEBUG (zm_dprintf ("FINAL ACK (%d)\n", __LINE__));
 		    }
+		  else
+		    stat = 0;
 		  xyz.at_eof = true;
 		  break;
 		}
@@ -585,7 +591,7 @@ xyzModem_stream_read (char *buf, int size, int *err)
 	    }
 	}
       /* Don't "read" data from the EOF protocol package */
-      if (!xyz.at_eof)
+      if (!xyz.at_eof && xyz.len > 0)
 	{
 	  len = xyz.len;
 	  if (size < len)
@@ -604,10 +610,10 @@ xyzModem_stream_read (char *buf, int size, int *err)
 void
 xyzModem_stream_close (int *err)
 {
-  diag_printf
+  ZM_DEBUG (zm_dprintf
     ("xyzModem - %s mode, %d(SOH)/%d(STX)/%d(CAN) packets, %d retries\n",
      xyz.crc_mode ? "CRC" : "Cksum", xyz.total_SOH, xyz.total_STX,
-     xyz.total_CAN, xyz.total_retries);
+     xyz.total_CAN, xyz.total_retries));
   ZM_DEBUG (zm_flush ());
 }
 

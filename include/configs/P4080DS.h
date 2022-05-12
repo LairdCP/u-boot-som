@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2009-2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -12,7 +11,6 @@
 
 #define CONFIG_PCIE3
 
-#define CONFIG_SYS_SATA_MAX_DEVICE  2
 #define CONFIG_LBA48
 
 #define CONFIG_SYS_SRIO

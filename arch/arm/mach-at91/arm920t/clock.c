@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * [origin: Linux kernel linux/arch/arm/mach-at91/clock.c]
  *
@@ -5,10 +6,9 @@
  * Copyright (C) 2005 David Brownell
  * Copyright (C) 2005 Ivan Kokshaysky
  * Copyright (C) 2009 Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
+#include <asm/global_data.h>
 #include <asm/io.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/at91_pmc.h>
@@ -38,7 +38,7 @@ static unsigned long at91_css_to_rate(unsigned long css)
 	return 0;
 }
 
-#ifdef CONFIG_USB_ATMEL
+#if defined(CONFIG_USB_ATMEL) || defined(CONFIG_USB_GADGET_AT91)
 static unsigned at91_pll_calc(unsigned main_freq, unsigned out_freq)
 {
 	unsigned i, div = 0, mul = 0, diff = 1 << 30;
@@ -128,7 +128,7 @@ int at91_clock_init(unsigned long main_clock)
 	/* report if PLLA is more than mildly overclocked */
 	gd->arch.plla_rate_hz = at91_pll_rate(main_clock, readl(&pmc->pllar));
 
-#ifdef CONFIG_USB_ATMEL
+#if defined(CONFIG_USB_ATMEL) || defined(CONFIG_USB_GADGET_AT91)
 	/*
 	 * USB clock init:  choose 48 MHz PLLB value,
 	 * disable 48MHz clock during usb peripheral suspend.

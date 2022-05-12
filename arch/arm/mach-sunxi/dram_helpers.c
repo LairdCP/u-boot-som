@@ -1,12 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * DRAM init helper functions
  *
  * (C) Copyright 2015 Hans de Goede <hdegoede@redhat.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <time.h>
 #include <asm/barriers.h>
 #include <asm/io.h>
 #include <asm/arch/dram.h>
@@ -26,7 +26,10 @@ void mctl_await_completion(u32 *reg, u32 mask, u32 val)
 
 /*
  * Test if memory at offset offset matches memory at begin of DRAM
+ *
+ * Note: dsb() is not available on ARMv5 in Thumb mode
  */
+#ifndef CONFIG_MACH_SUNIV
 bool mctl_mem_matches(u32 offset)
 {
 	/* Try to write different values to RAM at two addresses */
@@ -37,3 +40,4 @@ bool mctl_mem_matches(u32 offset)
 	return readl(CONFIG_SYS_SDRAM_BASE) ==
 	       readl((ulong)CONFIG_SYS_SDRAM_BASE + offset);
 }
+#endif

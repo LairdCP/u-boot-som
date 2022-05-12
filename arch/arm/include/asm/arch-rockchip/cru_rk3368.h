@@ -1,13 +1,14 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2017 Rockchip Electronics Co., Ltd
  * Author: Andy Yan <andy.yan@rock-chips.com>
- * SPDX-License-Identifier:     GPL-2.0+
  */
 #ifndef _ASM_ARCH_CRU_RK3368_H
 #define _ASM_ARCH_CRU_RK3368_H
 
-#include <common.h>
-
+#ifndef __ASSEMBLY__
+#include <linux/bitops.h>
+#endif
 
 /* RK3368 clock numbers */
 enum rk3368_pll_id {
@@ -95,6 +96,13 @@ enum {
 	CLK_SARADC_DIV_CON_WIDTH	= 8,
 
 	/* CLKSEL43_CON */
+	GMAC_DIV_CON_SHIFT		= 0x0,
+	GMAC_DIV_CON_MASK		= GENMASK(4, 0),
+	GMAC_PLL_SHIFT			= 6,
+	GMAC_PLL_MASK			= GENMASK(7, 6),
+	GMAC_PLL_SELECT_NEW		= (0x0 << GMAC_PLL_SHIFT),
+	GMAC_PLL_SELECT_CODEC		= (0x1 << GMAC_PLL_SHIFT),
+	GMAC_PLL_SELECT_GENERAL		= (0x2 << GMAC_PLL_SHIFT),
 	GMAC_MUX_SEL_EXTCLK             = BIT(8),
 
 	/* CLKSEL51_CON */
@@ -118,17 +126,17 @@ enum {
 	/* GLB_RST_CON */
 	PMU_GLB_SRST_CTRL_SHIFT		= 2,
 	PMU_GLB_SRST_CTRL_MASK		= GENMASK(3, 2),
-	PMU_RST_BY_FST_GLB_SRST 	= 0,
-	PMU_RST_BY_SND_GLB_SRST 	= 1,
+	PMU_RST_BY_FST_GLB_SRST		= 0,
+	PMU_RST_BY_SND_GLB_SRST		= 1,
 	PMU_RST_DISABLE			= 2,
 	WDT_GLB_SRST_CTRL_SHIFT		= 1,
 	WDT_GLB_SRST_CTRL_MASK		= BIT(1),
-	WDT_TRIGGER_SND_GLB_SRST 	= 0,
-	WDT_TRIGGER_FST_GLB_SRST 	= 1,
-	TSADC_GLB_SRST_CTRL_SHIFT 	= 0,
-	TSADC_GLB_SRST_CTRL_MASK  	= BIT(0),
-	TSADC_TRIGGER_SND_GLB_SRST 	= 0,
-	TSADC_TRIGGER_FST_GLB_SRST 	= 1,
+	WDT_TRIGGER_SND_GLB_SRST	= 0,
+	WDT_TRIGGER_FST_GLB_SRST	= 1,
+	TSADC_GLB_SRST_CTRL_SHIFT	= 0,
+	TSADC_GLB_SRST_CTRL_MASK	= BIT(0),
+	TSADC_TRIGGER_SND_GLB_SRST	= 0,
+	TSADC_TRIGGER_FST_GLB_SRST	= 1,
 
 };
 #endif

@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013
  *
  * Written by Guilherme Maciel Ferreira <guilherme.maciel.ferreira@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "imagetool.h"
@@ -27,6 +26,12 @@ struct image_type_params *imagetool_get_type(int type)
 	return NULL;
 }
 
+static int imagetool_verify_print_header_by_type(
+	void *ptr,
+	struct stat *sbuf,
+	struct image_type_params *tparams,
+	struct image_tool_params *params);
+
 int imagetool_verify_print_header(
 	void *ptr,
 	struct stat *sbuf,
@@ -39,6 +44,9 @@ int imagetool_verify_print_header(
 
 	struct image_type_params **start = __start_image_type;
 	struct image_type_params **end = __stop_image_type;
+
+	if (tparams)
+		return imagetool_verify_print_header_by_type(ptr, sbuf, tparams, params);
 
 	for (curr = start; curr != end; curr++) {
 		if ((*curr)->verify_header) {
@@ -66,7 +74,7 @@ int imagetool_verify_print_header(
 	return retval;
 }
 
-int imagetool_verify_print_header_by_type(
+static int imagetool_verify_print_header_by_type(
 	void *ptr,
 	struct stat *sbuf,
 	struct image_type_params *tparams,
@@ -149,7 +157,7 @@ int imagetool_get_filesize(struct image_tool_params *params, const char *fname)
 }
 
 time_t imagetool_get_source_date(
-	 struct image_tool_params *params,
+	 const char *cmdname,
 	 time_t fallback)
 {
 	char *source_date_epoch = getenv("SOURCE_DATE_EPOCH");
@@ -161,7 +169,7 @@ time_t imagetool_get_source_date(
 
 	if (gmtime(&time) == NULL) {
 		fprintf(stderr, "%s: SOURCE_DATE_EPOCH is not valid\n",
-			params->cmdname);
+			cmdname);
 		time = 0;
 	}
 

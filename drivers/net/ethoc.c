@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Opencore 10/100 ethernet mac driver
  *
@@ -6,12 +7,12 @@
  *   Thierry Reding <thierry.reding@avionic-design.de>
  * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
  * Copyright (C) 2016 Cadence Design Systems Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
+#include <cpu_func.h>
 #include <dm.h>
+#include <log.h>
 #include <dm/platform_data/net_ethoc.h>
 #include <linux/io.h>
 #include <malloc.h>
@@ -548,8 +549,8 @@ static int ethoc_mdio_read(struct mii_dev *bus, int addr, int devad, int reg)
 	ethoc_write(priv, MIIADDRESS, MIIADDRESS_ADDR(addr, reg));
 	ethoc_write(priv, MIICOMMAND, MIICOMMAND_READ);
 
-	rc = wait_for_bit(__func__, ethoc_reg(priv, MIISTATUS),
-			  MIISTATUS_BUSY, false, CONFIG_SYS_HZ, false);
+	rc = wait_for_bit_le32(ethoc_reg(priv, MIISTATUS),
+			       MIISTATUS_BUSY, false, CONFIG_SYS_HZ, false);
 
 	if (rc == 0) {
 		u32 data = ethoc_read(priv, MIIRX_DATA);
@@ -571,8 +572,8 @@ static int ethoc_mdio_write(struct mii_dev *bus, int addr, int devad, int reg,
 	ethoc_write(priv, MIITX_DATA, val);
 	ethoc_write(priv, MIICOMMAND, MIICOMMAND_WRITE);
 
-	rc = wait_for_bit(__func__, ethoc_reg(priv, MIISTATUS),
-			  MIISTATUS_BUSY, false, CONFIG_SYS_HZ, false);
+	rc = wait_for_bit_le32(ethoc_reg(priv, MIISTATUS),
+			       MIISTATUS_BUSY, false, CONFIG_SYS_HZ, false);
 
 	if (rc == 0) {
 		/* reset MII command register */
@@ -646,7 +647,7 @@ static inline int ethoc_phy_init(struct ethoc *priv, void *dev)
 
 static int ethoc_write_hwaddr(struct udevice *dev)
 {
-	struct ethoc_eth_pdata *pdata = dev_get_platdata(dev);
+	struct ethoc_eth_pdata *pdata = dev_get_plat(dev);
 	struct ethoc *priv = dev_get_priv(dev);
 	u8 *mac = pdata->eth_pdata.enetaddr;
 
@@ -684,12 +685,12 @@ static void ethoc_stop(struct udevice *dev)
 	ethoc_stop_common(dev_get_priv(dev));
 }
 
-static int ethoc_ofdata_to_platdata(struct udevice *dev)
+static int ethoc_of_to_plat(struct udevice *dev)
 {
-	struct ethoc_eth_pdata *pdata = dev_get_platdata(dev);
+	struct ethoc_eth_pdata *pdata = dev_get_plat(dev);
 	fdt_addr_t addr;
 
-	pdata->eth_pdata.iobase = devfdt_get_addr(dev);
+	pdata->eth_pdata.iobase = dev_read_addr(dev);
 	addr = devfdt_get_addr_index(dev, 1);
 	if (addr != FDT_ADDR_T_NONE)
 		pdata->packet_base = addr;
@@ -698,7 +699,7 @@ static int ethoc_ofdata_to_platdata(struct udevice *dev)
 
 static int ethoc_probe(struct udevice *dev)
 {
-	struct ethoc_eth_pdata *pdata = dev_get_platdata(dev);
+	struct ethoc_eth_pdata *pdata = dev_get_plat(dev);
 	struct ethoc *priv = dev_get_priv(dev);
 
 	priv->iobase = ioremap(pdata->eth_pdata.iobase, ETHOC_IOSIZE);
@@ -745,17 +746,17 @@ U_BOOT_DRIVER(ethoc) = {
 	.name				= "ethoc",
 	.id				= UCLASS_ETH,
 	.of_match			= ethoc_ids,
-	.ofdata_to_platdata		= ethoc_ofdata_to_platdata,
+	.of_to_plat		= ethoc_of_to_plat,
 	.probe				= ethoc_probe,
 	.remove				= ethoc_remove,
 	.ops				= &ethoc_ops,
-	.priv_auto_alloc_size		= sizeof(struct ethoc),
-	.platdata_auto_alloc_size	= sizeof(struct ethoc_eth_pdata),
+	.priv_auto		= sizeof(struct ethoc),
+	.plat_auto	= sizeof(struct ethoc_eth_pdata),
 };
 
 #else
 
-static int ethoc_init(struct eth_device *dev, bd_t *bd)
+static int ethoc_init(struct eth_device *dev, struct bd_info *bd)
 {
 	struct ethoc *priv = (struct ethoc *)dev->priv;
 

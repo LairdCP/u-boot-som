@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * efi_selftest_events
+ * efi_selftest_tpl
  *
  * Copyright (c) 2017 Heinrich Schuchardt <xypron.glpk@gmx.de>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  *
  * This unit test uses timer events to check the handling of
  * task priority levels.
@@ -38,7 +37,7 @@ static void EFIAPI notify(struct efi_event *event, void *context)
  *
  * @handle:	handle of the loaded image
  * @systable:	system table
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int setup(const efi_handle_t handle,
 		 const struct efi_system_table *systable)
@@ -56,7 +55,7 @@ static int setup(const efi_handle_t handle,
 		return EFI_ST_FAILURE;
 	}
 	ret = boottime->create_event(EVT_TIMER | EVT_NOTIFY_WAIT,
-				     TPL_HIGH_LEVEL, notify, NULL, &event_wait);
+				     TPL_NOTIFY, notify, NULL, &event_wait);
 	if (ret != EFI_SUCCESS) {
 		efi_st_error("could not create event\n");
 		return EFI_ST_FAILURE;
@@ -69,7 +68,7 @@ static int setup(const efi_handle_t handle,
  *
  * Close the events created in setup.
  *
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int teardown(void)
 {
@@ -107,7 +106,7 @@ static int teardown(void)
  * Lower the TPL level and check that the queued notification
  * function is called.
  *
- * @return:	EFI_ST_SUCCESS for success
+ * Return:	EFI_ST_SUCCESS for success
  */
 static int execute(void)
 {
@@ -144,14 +143,15 @@ static int execute(void)
 		efi_st_error("WaitForEvent returned wrong index\n");
 		return EFI_ST_FAILURE;
 	}
-	efi_st_printf("Notification count with TPL level TPL_APPLICATION: %u\n",
-		      notification_count);
 	if (notification_count < 8 || notification_count > 12) {
+		efi_st_printf(
+		    "Notification count with TPL level TPL_APPLICATION: %u\n",
+		    notification_count);
 		efi_st_error("Incorrect timing of events\n");
 		return EFI_ST_FAILURE;
 	}
 	ret = boottime->set_timer(event_notify, EFI_TIMER_STOP, 0);
-	if (index != 0) {
+	if (ret != EFI_SUCCESS) {
 		efi_st_error("Could not cancel timer\n");
 		return EFI_ST_FAILURE;
 	}
@@ -164,7 +164,7 @@ static int execute(void)
 	/* Set 10 ms timer */
 	notification_count = 0;
 	ret = boottime->set_timer(event_notify, EFI_TIMER_PERIODIC, 100000);
-	if (index != 0) {
+	if (ret != EFI_SUCCESS) {
 		efi_st_error("Could not set timer\n");
 		return EFI_ST_FAILURE;
 	}
@@ -181,9 +181,10 @@ static int execute(void)
 		efi_st_error("Could not check event\n");
 		return EFI_ST_FAILURE;
 	}
-	efi_st_printf("Notification count with TPL level TPL_CALLBACK: %u\n",
-		      notification_count);
 	if (notification_count != 0) {
+		efi_st_printf(
+			"Notification count with TPL level TPL_CALLBACK: %u\n",
+			notification_count);
 		efi_st_error("Suppressed timer fired\n");
 		return EFI_ST_FAILURE;
 	}
@@ -200,9 +201,10 @@ static int execute(void)
 		efi_st_error("Could not wait for event\n");
 		return EFI_ST_FAILURE;
 	}
-	efi_st_printf("Notification count with TPL level TPL_APPLICATION: %u\n",
-		      notification_count);
 	if (notification_count < 1) {
+		efi_st_printf(
+		    "Notification count with TPL level TPL_APPLICATION: %u\n",
+		    notification_count);
 		efi_st_error("Queued timer event did not fire\n");
 		return EFI_ST_FAILURE;
 	}
