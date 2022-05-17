@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: BSD-3-Clause
 /*
  * Copyright (C) 2012-2017 Altera Corporation <www.altera.com>
  * All rights reserved.
- *
- * SPDX-License-Identifier:	BSD-3-Clause
  */
 
 #include <common.h>
@@ -11,8 +10,6 @@
 #include <asm/arch/fpga_manager.h>
 #include <asm/arch/reset_manager.h>
 #include <asm/arch/system_manager.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /* Timeout count */
 #define FPGA_TIMEOUT_CNT		0x1000000
@@ -72,4 +69,3 @@ void fpgamgr_program_write(const void *rbf_data, size_t rbf_size)
 		: "+r"(src), "+r"(dst), "+r"(loops32), "+r"(loops4) :
 		: "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "cc");
 }
-

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *
  * HW data initialization for OMAP5
@@ -6,8 +7,6 @@
  * Texas Instruments, <www.ti.com>
  *
  * Sricharan R <r.sricharan@ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <palmas.h>
@@ -378,6 +377,85 @@ struct vcores_data omap5430_volts_es2 = {
 };
 
 /*
+ * Enable IPU1 clock domains, modules and
+ * do some additional special settings needed
+ */
+void enable_ipu1_clocks(void)
+{
+	if (!IS_ENABLED(CONFIG_DRA7XX) ||
+	    !IS_ENABLED(CONFIG_REMOTEPROC_TI_IPU))
+		return;
+
+	u32 const clk_domains[] = {
+		(*prcm)->cm_ipu_clkstctrl,
+		(*prcm)->cm_ipu1_clkstctrl,
+		0
+	};
+
+	u32 const clk_modules_hw_auto_essential[] = {
+		(*prcm)->cm_ipu1_ipu1_clkctrl,
+		0
+	};
+
+	u32 const clk_modules_explicit_en_essential[] = {
+		(*prcm)->cm_l4per_gptimer11_clkctrl,
+		(*prcm)->cm1_abe_timer7_clkctrl,
+		(*prcm)->cm1_abe_timer8_clkctrl,
+		0
+	};
+	do_enable_ipu_clocks(clk_domains, clk_modules_hw_auto_essential,
+			     clk_modules_explicit_en_essential, 0);
+
+	/* Enable optional additional functional clock for IPU1 */
+	setbits_le32((*prcm)->cm_ipu1_ipu1_clkctrl,
+		     IPU1_CLKCTRL_CLKSEL_MASK);
+	/* Enable optional additional functional clock for IPU1 */
+	setbits_le32((*prcm)->cm1_abe_timer7_clkctrl,
+		     IPU1_CLKCTRL_CLKSEL_MASK);
+	/* Enable optional additional functional clock for IPU1 */
+	setbits_le32((*prcm)->cm1_abe_timer8_clkctrl,
+		     IPU1_CLKCTRL_CLKSEL_MASK);
+}
+
+/*
+ * Enable IPU2 clock domains, modules and
+ * do some additional special settings needed
+ */
+void enable_ipu2_clocks(void)
+{
+	if (!IS_ENABLED(CONFIG_DRA7XX) ||
+	    !IS_ENABLED(CONFIG_REMOTEPROC_TI_IPU))
+		return;
+
+	u32 const clk_domains[] = {
+		(*prcm)->cm_ipu_clkstctrl,
+		(*prcm)->cm_ipu2_clkstctrl,
+		0
+	};
+
+	u32 const clk_modules_hw_auto_essential[] = {
+		(*prcm)->cm_ipu2_ipu2_clkctrl,
+		0
+	};
+
+	u32 const clk_modules_explicit_en_essential[] = {
+		(*prcm)->cm_l4per_gptimer3_clkctrl,
+		(*prcm)->cm_l4per_gptimer4_clkctrl,
+		(*prcm)->cm_l4per_gptimer9_clkctrl,
+		0
+	};
+	do_enable_ipu_clocks(clk_domains, clk_modules_hw_auto_essential,
+			     clk_modules_explicit_en_essential, 0);
+
+	/* Enable optional additional functional clock for IPU2 */
+	setbits_le32((*prcm)->cm_l4per_gptimer4_clkctrl,
+		     IPU1_CLKCTRL_CLKSEL_MASK);
+	/* Enable optional additional functional clock for IPU2 */
+	setbits_le32((*prcm)->cm_l4per_gptimer9_clkctrl,
+		     IPU1_CLKCTRL_CLKSEL_MASK);
+}
+
+/*
  * Enable essential clock domains, modules and
  * do some additional special settings needed
  */
@@ -419,6 +497,7 @@ void enable_basic_clocks(void)
 		(*prcm)->cm_l3init_hsmmc2_clkctrl,
 		(*prcm)->cm_l4per_gptimer2_clkctrl,
 		(*prcm)->cm_wkup_wdtimer2_clkctrl,
+		(*prcm)->cm_l4per_uart1_clkctrl,
 		(*prcm)->cm_l4per_uart3_clkctrl,
 		(*prcm)->cm_l4per_i2c1_clkctrl,
 #ifdef CONFIG_DRIVER_TI_CPSW
@@ -438,17 +517,17 @@ void enable_basic_clocks(void)
 	setbits_le32((*prcm)->cm_l4per_gpio4_clkctrl,
 			GPIO4_CLKCTRL_OPTFCLKEN_MASK);
 
-	/* Enable 96 MHz clock for MMC1 & MMC2 */
+	/* Enable 192 MHz clock for MMC1 & MMC2 */
 	setbits_le32((*prcm)->cm_l3init_hsmmc1_clkctrl,
 			HSMMC_CLKCTRL_CLKSEL_MASK);
 	setbits_le32((*prcm)->cm_l3init_hsmmc2_clkctrl,
 			HSMMC_CLKCTRL_CLKSEL_MASK);
 
 	/* Set the correct clock dividers for mmc */
-	setbits_le32((*prcm)->cm_l3init_hsmmc1_clkctrl,
-			HSMMC_CLKCTRL_CLKSEL_DIV_MASK);
-	setbits_le32((*prcm)->cm_l3init_hsmmc2_clkctrl,
-			HSMMC_CLKCTRL_CLKSEL_DIV_MASK);
+	clrbits_le32((*prcm)->cm_l3init_hsmmc1_clkctrl,
+		     HSMMC_CLKCTRL_CLKSEL_DIV_MASK);
+	clrbits_le32((*prcm)->cm_l3init_hsmmc2_clkctrl,
+		     HSMMC_CLKCTRL_CLKSEL_DIV_MASK);
 
 	/* Select 32KHz clock as the source of GPTIMER1 */
 	setbits_le32((*prcm)->cm_wkup_gptimer1_clkctrl,
@@ -478,12 +557,13 @@ void enable_basic_clocks(void)
 
 void enable_basic_uboot_clocks(void)
 {
-	u32 const clk_domains_essential[] = {
-#if defined(CONFIG_DRA7XX)
-		(*prcm)->cm_ipu_clkstctrl,
-#endif
-		0
-	};
+	u32 cm_ipu_clkstctrl = 0;
+
+	if (IS_ENABLED(CONFIG_DRA7XX) &&
+	    !IS_ENABLED(CONFIG_REMOTEPROC_TI_IPU))
+		cm_ipu_clkstctrl = (*prcm)->cm_ipu_clkstctrl;
+
+	u32 const clk_domains_essential[] = {cm_ipu_clkstctrl, 0};
 
 	u32 const clk_modules_hw_auto_essential[] = {
 		(*prcm)->cm_l3init_hsusbtll_clkctrl,
@@ -746,6 +826,8 @@ void __weak hw_data_init(void)
 	*ctrl = &omap5_ctrl;
 	break;
 
+	case DRA762_ABZ_ES1_0:
+	case DRA762_ACD_ES1_0:
 	case DRA762_ES1_0:
 	*prcm = &dra7xx_prcm;
 	*dplls_data = &dra76x_dplls;
@@ -792,6 +874,8 @@ void get_ioregs(const struct ctrl_ioregs **regs)
 	case DRA752_ES1_1:
 	case DRA752_ES2_0:
 	case DRA762_ES1_0:
+	case DRA762_ACD_ES1_0:
+	case DRA762_ABZ_ES1_0:
 		*regs = &ioregs_dra7xx_es1;
 		break;
 	case DRA722_ES1_0:

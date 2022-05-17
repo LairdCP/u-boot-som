@@ -1,8 +1,14 @@
 menu "UBI support"
 
+config UBI_SILENCE_MSG
+	bool "UBI silence verbose messages"
+	default ENV_IS_IN_UBI
+	help
+	  Make the verbose messages from UBI stop printing. This leaves
+	  warnings and errors enabled.
+
 config MTD_UBI
 	bool "Enable UBI - Unsorted block images"
-	select CRC32
 	select RBTREE
 	select MTD_PARTITIONS
 	help
@@ -62,7 +68,6 @@ config MTD_UBI_BEB_LIMIT
 
 config MTD_UBI_FASTMAP
 	bool "UBI Fastmap (Experimental feature)"
-	default n
 	help
 	   Important: this feature is experimental so far and the on-flash
 	   format for fastmap may change in the next kernel versions

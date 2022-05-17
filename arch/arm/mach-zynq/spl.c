@@ -1,10 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * (C) Copyright 2014 Xilinx, Inc. Michal Simek
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * (C) Copyright 2014 - 2017 Xilinx, Inc. Michal Simek
  */
 #include <common.h>
 #include <debug_uart.h>
+#include <hang.h>
+#include <image.h>
+#include <init.h>
+#include <log.h>
 #include <spl.h>
 
 #include <asm/io.h>
@@ -13,24 +16,29 @@
 #include <asm/arch/sys_proto.h>
 #include <asm/arch/ps7_init_gpl.h>
 
-DECLARE_GLOBAL_DATA_PTR;
+#if defined(CONFIG_DEBUG_UART_BOARD_INIT)
+void board_debug_uart_init(void)
+{
+	ps7_init();
+}
+#endif
 
 void board_init_f(ulong dummy)
 {
+#if !defined(CONFIG_DEBUG_UART_BOARD_INIT)
 	ps7_init();
+#endif
 
 	arch_cpu_init();
-	/*
-	 * The debug UART can be used from this point:
-	 * debug_uart_init();
-	 * printch('x');
-	 */
 }
 
 #ifdef CONFIG_SPL_BOARD_INIT
 void spl_board_init(void)
 {
 	preloader_console_init();
+#if defined(CONFIG_ARCH_EARLY_INIT_R) && defined(CONFIG_SPL_FPGA)
+	arch_early_init_r();
+#endif
 	board_init();
 }
 #endif
@@ -40,9 +48,8 @@ u32 spl_boot_device(void)
 	u32 mode;
 
 	switch ((zynq_slcr_get_boot_mode()) & ZYNQ_BM_MASK) {
-#ifdef CONFIG_SPL_SPI_SUPPORT
+#ifdef CONFIG_SPL_SPI
 	case ZYNQ_BM_QSPI:
-		puts("qspi boot\n");
 		mode = BOOT_DEVICE_SPI;
 		break;
 #endif
@@ -52,9 +59,8 @@ u32 spl_boot_device(void)
 	case ZYNQ_BM_NOR:
 		mode = BOOT_DEVICE_NOR;
 		break;
-#ifdef CONFIG_SPL_MMC_SUPPORT
+#ifdef CONFIG_SPL_MMC
 	case ZYNQ_BM_SD:
-		puts("mmc boot\n");
 		mode = BOOT_DEVICE_MMC1;
 		break;
 #endif
@@ -69,13 +75,6 @@ u32 spl_boot_device(void)
 	return mode;
 }
 
-#ifdef CONFIG_SPL_MMC_SUPPORT
-u32 spl_boot_mode(const u32 boot_device)
-{
-	return MMCSD_MODE_FS;
-}
-#endif
-
 #ifdef CONFIG_SPL_OS_BOOT
 int spl_start_uboot(void)
 {
@@ -89,13 +88,3 @@ void spl_board_prepare_for_boot(void)
 	ps7_post_config();
 	debug("SPL bye\n");
 }
-
-#ifdef CONFIG_SPL_LOAD_FIT
-int board_fit_config_name_match(const char *name)
-{
-	/* Just empty function now - can't decide what to choose */
-	debug("%s: %s\n", __func__, name);
-
-	return 0;
-}
-#endif

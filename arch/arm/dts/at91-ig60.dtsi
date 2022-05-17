@@ -62,12 +62,31 @@
 &macb0 {
 	status = "okay";
 
-	/* MDIO bus nodes are not supported yet by u-boot */
-	ksz9021,rgmii_2.0_timing;
+	phy-handle = <&phy0>;
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		phy0: ethernet-phy@7 {
+			reg = <7>;
+		};
+	};
 };
 
 &macb1 {
 	status = "okay";
+
+	phy-handle = <&phy1>;
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		phy1: ethernet-phy@1 {
+			reg = <1>;
+		};
+	};
 };
 
 &dbgu {

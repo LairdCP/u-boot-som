@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2017 Vasily Khoruzhick <anarsoul@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -9,14 +8,14 @@
 #include <errno.h>
 #include <i2c.h>
 #include <edid.h>
+#include <log.h>
 #include <video_bridge.h>
+#include <linux/delay.h>
 #include "../anx98xx-edp.h"
 
 #define DP_MAX_LINK_RATE		0x001
 #define DP_MAX_LANE_COUNT		0x002
 #define DP_MAX_LANE_COUNT_MASK		0x1f
-
-DECLARE_GLOBAL_DATA_PTR;
 
 struct anx6345_priv {
 	u8 edid[EDID_SIZE];
@@ -75,7 +74,7 @@ static int anx6345_read(struct udevice *dev, unsigned int addr_off,
 static int anx6345_write_r0(struct udevice *dev, unsigned char reg_addr,
 			    unsigned char value)
 {
-	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
+	struct dm_i2c_chip *chip = dev_get_parent_plat(dev);
 
 	return anx6345_write(dev, chip->chip_addr, reg_addr, value);
 }
@@ -83,7 +82,7 @@ static int anx6345_write_r0(struct udevice *dev, unsigned char reg_addr,
 static int anx6345_read_r0(struct udevice *dev, unsigned char reg_addr,
 			   unsigned char *value)
 {
-	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
+	struct dm_i2c_chip *chip = dev_get_parent_plat(dev);
 
 	return anx6345_read(dev, chip->chip_addr, reg_addr, value);
 }
@@ -91,7 +90,7 @@ static int anx6345_read_r0(struct udevice *dev, unsigned char reg_addr,
 static int anx6345_write_r1(struct udevice *dev, unsigned char reg_addr,
 			    unsigned char value)
 {
-	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
+	struct dm_i2c_chip *chip = dev_get_parent_plat(dev);
 
 	return anx6345_write(dev, chip->chip_addr + 1, reg_addr, value);
 }
@@ -99,7 +98,7 @@ static int anx6345_write_r1(struct udevice *dev, unsigned char reg_addr,
 static int anx6345_read_r1(struct udevice *dev, unsigned char reg_addr,
 			   unsigned char *value)
 {
-	struct dm_i2c_chip *chip = dev_get_parent_platdata(dev);
+	struct dm_i2c_chip *chip = dev_get_parent_plat(dev);
 
 	return anx6345_read(dev, chip->chip_addr + 1, reg_addr, value);
 }
@@ -422,5 +421,5 @@ U_BOOT_DRIVER(analogix_anx6345) = {
 	.of_match = anx6345_ids,
 	.probe	= anx6345_probe,
 	.ops	= &anx6345_ops,
-	.priv_auto_alloc_size = sizeof(struct anx6345_priv),
+	.priv_auto	= sizeof(struct anx6345_priv),
 };

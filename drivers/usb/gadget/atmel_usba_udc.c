@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Driver for the Atmel USBA high speed USB device controller
  * [Original from Linux kernel: drivers/usb/gadget/atmel_usba_udc.c]
  *
  * Copyright (C) 2005-2013 Atmel Corporation
  *			   Bo Shen <voice.shen@atmel.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
+#include <linux/bitops.h>
 #include <linux/errno.h>
 #include <asm/gpio.h>
 #include <asm/hardware.h>
@@ -17,7 +17,6 @@
 #include <linux/usb/gadget.h>
 #include <linux/usb/atmel_usba_udc.h>
 #include <malloc.h>
-#include <usb/lin_gadget_compat.h>
 
 #include <dm.h>
 #include <dm/device.h>
@@ -336,6 +335,9 @@ usba_ep_free_request(struct usb_ep *_ep, struct usb_request *_req)
 
 	DBG(DBG_GADGET, "ep_free_request: %p, %p\n", _ep, _req);
 
+	if (!_req)
+		return;
+
 	free(req);
 }
 
@@ -517,10 +519,20 @@ usba_udc_set_selfpowered(struct usb_gadget *gadget, int is_selfpowered)
 	return 0;
 }
 
+#if CONFIG_IS_ENABLED(DM_USB_GADGET)
+static int usba_gadget_start(struct usb_gadget *g,
+			     struct usb_gadget_driver *driver);
+static int usba_gadget_stop(struct usb_gadget *g);
+#endif
+
 static const struct usb_gadget_ops usba_udc_ops = {
 	.get_frame		= usba_udc_get_frame,
 	.wakeup			= usba_udc_wakeup,
 	.set_selfpowered	= usba_udc_set_selfpowered,
+#if CONFIG_IS_ENABLED(DM_USB_GADGET)
+	.udc_start		= usba_gadget_start,
+	.udc_stop		= usba_gadget_stop,
+#endif
 };
 
 static struct usb_endpoint_descriptor usba_ep0_desc = {
@@ -1205,6 +1217,8 @@ static struct usba_udc controller = {
 	},
 };
 
+#if ! CONFIG_IS_ENABLED(DM_USB_GADGET)
+
 int usb_gadget_handle_interrupts(int index)
 {
 	struct usba_udc *udc = &controller;
@@ -1259,6 +1273,64 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 	return 0;
 }
 
+#else /* !CONFIG_IS_ENABLED(DM_USB_GADGET) */
+
+int dm_usb_gadget_handle_interrupts(struct udevice *dev)
+{
+	struct usba_udc *udc = &controller;
+
+	return usba_udc_irq(udc);
+}
+
+static int usba_gadget_start(struct usb_gadget *g,
+			     struct usb_gadget_driver *driver)
+{
+	struct usba_udc *udc = &controller;
+
+	if (!driver || !driver->bind || !driver->setup) {
+		printf("bad paramter\n");
+		return -EINVAL;
+	}
+
+	if (udc->driver) {
+		printf("UDC already has a gadget driver\n");
+		return -EBUSY;
+	}
+
+	udc->driver = driver;
+
+	/* Enable UPLL clock */
+	at91_upll_clk_enable();
+
+	/* Enable UDPHS clock */
+	at91_periph_clk_enable(ATMEL_ID_UDPHS);
+
+	atmel_usba_start(udc);
+
+	return 0;
+}
+
+static int usba_gadget_stop(struct usb_gadget *g)
+{
+	struct usba_udc *udc = &controller;
+
+	if (!udc->driver)
+		return -EINVAL;
+
+	atmel_usba_stop(udc);
+
+	udc->driver = NULL;
+
+	/* Disable UDPHS clock */
+	at91_periph_clk_disable(ATMEL_ID_UDPHS);
+
+	/* Disable UPLL clock */
+	at91_upll_clk_disable();
+
+	return 0;
+}
+#endif
+
 static struct usba_ep *usba_udc_pdata(struct usba_platform_data *pdata,
 				      struct usba_udc *udc)
 {
@@ -1299,6 +1371,8 @@ static struct usba_ep *usba_udc_pdata(struct usba_platform_data *pdata,
 	return eps;
 }
 
+#if ! CONFIG_IS_ENABLED(DM_USB_GADGET)
+
 int usba_udc_probe(struct usba_platform_data *pdata)
 {
 	struct usba_udc *udc;
@@ -1310,32 +1384,32 @@ int usba_udc_probe(struct usba_platform_data *pdata)
 	return 0;
 }
 
-#ifdef CONFIG_DM_USB
-static int usba_udc_usb_probe(struct udevice *dev)
+#else
+
+static int usba_gadget_probe(struct udevice *dev)
 {
-	/* Enable UPLL clock */
-	at91_upll_clk_enable();
+	struct usba_udc *udc = &controller;
 
-	/* Enable UDPHS clock */
-	at91_periph_clk_enable(ATMEL_ID_UDPHS);
+	udc->usba_ep = usba_udc_pdata(&pdata, udc);
 
-	return usba_udc_probe(&pdata);
+	udc->driver = NULL;
+
+	return usb_add_gadget_udc((struct device *)dev, &udc->gadget);
 }
 
-static int usba_udc_usb_remove(struct udevice *dev)
+static int usba_gadget_remove(struct udevice *dev)
 {
-	atmel_usba_stop(&controller);
+	struct usba_udc *udc = &controller;
 
-	/* Disable UDPHS clock */
-	at91_periph_clk_disable(ATMEL_ID_UDPHS);
+	usb_del_gadget_udc(&udc->gadget);
 
-	/* Disable UPLL clock */
-	at91_upll_clk_disable();
+	free(udc->usba_ep);
+	udc->usba_ep = NULL;
 
 	return 0;
 }
 
-static const struct udevice_id usba_udc_ids[] = {
+static const struct udevice_id usba_gadget_ids[] = {
 	{ .compatible = "atmel,at91sam9g45-udc" },
 	{ .compatible = "atmel,sama5d3-udc" },
 	{ }
@@ -1343,11 +1417,10 @@ static const struct udevice_id usba_udc_ids[] = {
 
 U_BOOT_DRIVER(usb_usba_udc) = {
 	.name		= "atmel-usba_udc",
-	.id		= UCLASS_USB_DEV_GENERIC,
-	.of_match	= usba_udc_ids,
-	.probe		= usba_udc_usb_probe,
-	.remove		= usba_udc_usb_remove,
-	.platdata_auto_alloc_size = sizeof(struct usb_platdata),
-	.flags	= DM_FLAG_OS_PREPARE,
+	.id		= UCLASS_USB_GADGET_GENERIC,
+	.of_match	= usba_gadget_ids,
+	.probe		= usba_gadget_probe,
+	.remove		= usba_gadget_remove,
+	.plat_auto	= sizeof(struct usb_plat),
 };
 #endif

@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * ./arch/arm/mach-rmobile/include/mach/rcar-gen3-base.h
  *
  * Copyright (C) 2015 Renesas Electronics Corporation
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ASM_ARCH_RCAR_GEN3_BASE_H
@@ -75,11 +74,9 @@
 #define PUEN_USB1_OVC   (1 << 2)
 #define PUEN_USB1_PWEN  (1 << 1)
 
-/* IICDVFS (I2C) */
-#define CONFIG_SYS_I2C_SH_BASE0	0xE60B0000
-
 #ifndef __ASSEMBLY__
 #include <asm/types.h>
+#include <linux/bitops.h>
 
 /* RWDT */
 struct rcar_rwdt {

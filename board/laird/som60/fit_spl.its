@@ -15,9 +15,9 @@
 	images {
 		uboot {
 			description = "Summit U-Boot";
-			data = /incbin/("../../../u-boot-nodtb.bin");
+			data = /incbin/("u-boot-nodtb.bin");
 			type = "standalone";
-			os = "U-Boot";
+			os = "u-boot";
 			arch = "arm";
 			compression = "none";
 			load = <0x21000000>;
@@ -29,7 +29,7 @@
 
 		fdt {
 			description = "Flattened Device Tree blob";
-			data = /incbin/("../../../u-boot.dtb");
+			data = /incbin/("u-boot.dtb");
 			type = "flat_dt";
 			arch = "arm";
 			compression = "none";

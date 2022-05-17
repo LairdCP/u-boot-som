@@ -40,8 +40,9 @@
 				};
 			};
 
-			sha@f8034000 {
-				status = "disabled";
+			watchdog@fffffe40 {
+				u-boot,dm-pre-reloc;
+				status = "okay";
 			};
 		};
 	};
@@ -71,9 +72,6 @@
 };
 
 &macb1 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-
 	phy-mode = "rmii";
 };
 

@@ -1,11 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013 Atmel Corporation
  * Josh Wu <josh.wu@atmel.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <init.h>
+#include <net.h>
+#include <vsprintf.h>
+#include <asm/global_data.h>
 #include <asm/io.h>
 #include <asm/arch/at91sam9x5_matrix.h>
 #include <asm/arch/at91sam9_smc.h>
@@ -205,7 +208,7 @@ int board_init(void)
 }
 
 #ifdef CONFIG_KS8851_MLL
-int board_eth_init(bd_t *bis)
+int board_eth_init(struct bd_info *bis)
 {
 	return ks8851_mll_initialize(0, CONFIG_KS8851_MLL_BASEADDR);
 }

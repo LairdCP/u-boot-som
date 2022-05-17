@@ -6,7 +6,9 @@
  */
 
 #include <common.h>
-#include <environment.h>
+#include <init.h>
+#include <env.h>
+#include <net.h>
 #include <debug_uart.h>
 
 #include <asm/arch/at91_common.h>
@@ -16,7 +18,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /* ------------------------------------------------------------------------- */
 /*
- * Miscelaneous platform dependent initialisations
+ * Miscelaneous platform dependent initializations
  */
 
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT
@@ -93,9 +95,9 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 
-#ifdef CONFIG_NAND
+#ifdef CONFIG_MTD_RAW_NAND
 	/* Disable Flash Write Protect Line */
-	at91_set_gpio_output(AT91_PIN_PD10, 1);
+	at91_set_pio_output(AT91_PIO_PORTD, 10, 1);
 #endif
 
 	return 0;

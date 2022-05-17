@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014
  * DENX Software Engineering
@@ -15,8 +16,6 @@
  *		some functions added to address abstraction
  *
  * All rights reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include "mkimage.h"
@@ -26,9 +25,10 @@
 
 void usage(char *cmdname)
 {
-	fprintf(stderr, "Usage: %s -f fit file -k key file\n"
+	fprintf(stderr, "Usage: %s -f fit file -k key file -c config name\n"
 			 "          -f ==> set fit file which should be checked'\n"
-			 "          -k ==> set key file which contains the key'\n",
+			 "          -k ==> set key .dtb file which contains the key'\n"
+			 "          -c ==> set the configuration name'\n",
 		cmdname);
 	exit(EXIT_FAILURE);
 }
@@ -75,10 +75,10 @@ int main(int argc, char **argv)
 		usage(*argv);
 	}
 
-	ffd = mmap_fdt(cmdname, fdtfile, 0, &fit_blob, &fsbuf, false);
+	ffd = mmap_fdt(cmdname, fdtfile, 0, &fit_blob, &fsbuf, false, true);
 	if (ffd < 0)
 		return EXIT_FAILURE;
-	kfd = mmap_fdt(cmdname, keyfile, 0, &key_blob, &ksbuf, false);
+	kfd = mmap_fdt(cmdname, keyfile, 0, &key_blob, &ksbuf, false, true);
 	if (kfd < 0)
 		return EXIT_FAILURE;
 
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Signature check OK\n");
 	} else {
 		ret = EXIT_FAILURE;
-		fprintf(stderr, "Signature check Bad (error %d)\n", ret);
+		fprintf(stderr, "Signature check bad (error %d)\n", ret);
 	}
 
 	(void) munmap((void *)fit_blob, fsbuf.st_size);

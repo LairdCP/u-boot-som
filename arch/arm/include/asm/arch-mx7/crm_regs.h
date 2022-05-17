@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2015 Freescale Semiconductor, Inc.
  *
  * Author:
  *	Peng Fan <Peng.Fan@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __ARCH_ARM_MACH_MX7_CCM_REGS_H__
@@ -58,7 +57,7 @@ struct mxc_ccm_reg {
 	uint32_t reserved_0[4092];
 	struct mxc_ccm_ccgr ccgr_array[191];	/* offset 0x4000 */
 	uint32_t reserved_1[3332];
-	struct mxc_ccm_root_slice root[121];	/* offset 0x8000 */
+	struct mxc_ccm_root_slice root[125];	/* offset 0x8000 */
 
 };
 

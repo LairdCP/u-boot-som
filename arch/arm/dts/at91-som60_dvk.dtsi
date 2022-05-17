@@ -80,14 +80,32 @@
 &macb0 {
 	status = "okay";
 
-	vsc8531,clk-out-frequency = <125000000>;
+	phy-handle = <&phy0>;
 
-	/* MDIO bus nodes are not supported yet by u-boot */
-	ksz9021,rgmii_2.0_timing;
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		phy0: ethernet-phy@7 {
+			reg = <7>;
+			vsc8531,clk-out-frequency = <125000000>;
+		};
+	};
 };
 
 &macb1 {
 	status = "okay";
+
+	phy-handle = <&phy1>;
+
+	mdio {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		phy1: ethernet-phy@1 {
+			reg = <1>;
+		};
+	};
 };
 
 &dbgu {

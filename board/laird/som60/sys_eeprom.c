@@ -7,6 +7,8 @@
 
 #include <common.h>
 #include <asm/unaligned.h>
+#include <env.h>
+#include <command.h>
 #include <dm.h>
 #include <i2c_eeprom.h>
 
@@ -70,7 +72,7 @@ static int read_eeprom(void)
 			return ret;
 	}
 
-	ret = i2c_eeprom_read(dev, CONFIG_SYS_I2C_MAC_OFFSET, mac[MAC_STORED_PORT], 6);
+	ret = i2c_eeprom_read(dev, SYS_I2C_MAC_OFFSET, mac[MAC_STORED_PORT], 6);
 	if (ret)
 		return ret;
 
@@ -96,7 +98,7 @@ static int prog_eeprom(void)
 		}
 	}
 
-	ret = i2c_eeprom_write(dev, CONFIG_SYS_I2C_MAC_OFFSET, mac[MAC_STORED_PORT], 6);
+	ret = i2c_eeprom_write(dev, SYS_I2C_MAC_OFFSET, mac[MAC_STORED_PORT], 6);
 	if (ret) {
 		if (ret == -EREMOTEIO)
 			printf("EEPROM is Write-Protected\n");
@@ -105,7 +107,7 @@ static int prog_eeprom(void)
 		goto fail;
 	}
 
-	ret = i2c_eeprom_read(dev, CONFIG_SYS_I2C_MAC_OFFSET, mac2, 6);
+	ret = i2c_eeprom_read(dev, SYS_I2C_MAC_OFFSET, mac2, 6);
 	if (ret) {
 		printf("EEPROM Read Error %d\n", ret);
 		goto fail;
@@ -155,7 +157,7 @@ static void set_mac_address(unsigned int index, const char *string)
 	printf("You need to save address and reboot before new address is activated\n");
 }
 
-int do_mac(cmd_tbl_t *cmdtp, int flag, int argc, char *const argv[])
+int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	char cmd;
 

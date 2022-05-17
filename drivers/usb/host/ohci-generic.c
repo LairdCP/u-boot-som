@@ -1,12 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Alexey Brodkin <abrodkin@synopsys.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <clk.h>
 #include <dm.h>
+#include <log.h>
+#include <dm/device_compat.h>
+#include <dm/devres.h>
 #include <dm/ofnode.h>
 #include <generic-phy.h>
 #include <reset.h>
@@ -25,15 +27,66 @@ struct generic_ohci {
 	int reset_count;	/* number of reset in reset list */
 };
 
+static int ohci_setup_phy(struct udevice *dev, int index)
+{
+	struct generic_ohci *priv = dev_get_priv(dev);
+	int ret;
+
+	ret = generic_phy_get_by_index(dev, index, &priv->phy);
+	if (ret) {
+		if (ret != -ENOENT) {
+			dev_err(dev, "failed to get usb phy\n");
+			return ret;
+		}
+	} else {
+		ret = generic_phy_init(&priv->phy);
+		if (ret) {
+			dev_dbg(dev, "failed to init usb phy\n");
+			return ret;
+		}
+
+		ret = generic_phy_power_on(&priv->phy);
+		if (ret) {
+			dev_dbg(dev, "failed to power on usb phy\n");
+			return generic_phy_exit(&priv->phy);
+		}
+	}
+
+	return 0;
+}
+
+static int ohci_shutdown_phy(struct udevice *dev)
+{
+	struct generic_ohci *priv = dev_get_priv(dev);
+	int ret = 0;
+
+	if (generic_phy_valid(&priv->phy)) {
+		ret = generic_phy_power_off(&priv->phy);
+		if (ret) {
+			dev_dbg(dev, "failed to power off usb phy\n");
+			return ret;
+		}
+
+		ret = generic_phy_exit(&priv->phy);
+		if (ret) {
+			dev_dbg(dev, "failed to power off usb phy\n");
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
 static int ohci_usb_probe(struct udevice *dev)
 {
-	struct ohci_regs *regs = (struct ohci_regs *)devfdt_get_addr(dev);
+	struct ohci_regs *regs = dev_read_addr_ptr(dev);
 	struct generic_ohci *priv = dev_get_priv(dev);
 	int i, err, ret, clock_nb, reset_nb;
 
 	err = 0;
 	priv->clock_count = 0;
-	clock_nb = dev_count_phandle_with_args(dev, "clocks", "#clock-cells");
+	clock_nb = dev_count_phandle_with_args(dev, "clocks", "#clock-cells",
+					       0);
 	if (clock_nb > 0) {
 		priv->clocks = devm_kcalloc(dev, clock_nb, sizeof(struct clk),
 					    GFP_KERNEL);
@@ -46,20 +99,21 @@ static int ohci_usb_probe(struct udevice *dev)
 				break;
 
 			err = clk_enable(&priv->clocks[i]);
-			if (err) {
-				pr_err("failed to enable clock %d\n", i);
+			if (err && err != -ENOSYS) {
+				dev_err(dev, "failed to enable clock %d\n", i);
 				clk_free(&priv->clocks[i]);
 				goto clk_err;
 			}
 			priv->clock_count++;
 		}
 	} else if (clock_nb != -ENOENT) {
-		pr_err("failed to get clock phandle(%d)\n", clock_nb);
+		dev_err(dev, "failed to get clock phandle(%d)\n", clock_nb);
 		return clock_nb;
 	}
 
 	priv->reset_count = 0;
-	reset_nb = dev_count_phandle_with_args(dev, "resets", "#reset-cells");
+	reset_nb = dev_count_phandle_with_args(dev, "resets", "#reset-cells",
+					       0);
 	if (reset_nb > 0) {
 		priv->resets = devm_kcalloc(dev, reset_nb,
 					    sizeof(struct reset_ctl),
@@ -74,31 +128,20 @@ static int ohci_usb_probe(struct udevice *dev)
 
 			err = reset_deassert(&priv->resets[i]);
 			if (err) {
-				pr_err("failed to deassert reset %d\n", i);
+				dev_err(dev, "failed to deassert reset %d\n", i);
 				reset_free(&priv->resets[i]);
 				goto reset_err;
 			}
 			priv->reset_count++;
 		}
 	} else if (reset_nb != -ENOENT) {
-		pr_err("failed to get reset phandle(%d)\n", reset_nb);
+		dev_err(dev, "failed to get reset phandle(%d)\n", reset_nb);
 		goto clk_err;
 	}
 
-	err = generic_phy_get_by_index(dev, 0, &priv->phy);
-	if (err) {
-		if (err != -ENOENT) {
-			pr_err("failed to get usb phy\n");
-			goto reset_err;
-		}
-	} else {
-
-		err = generic_phy_init(&priv->phy);
-		if (err) {
-			pr_err("failed to init usb phy\n");
-			goto reset_err;
-		}
-	}
+	err = ohci_setup_phy(dev, 0);
+	if (err)
+		goto reset_err;
 
 	err = ohci_register(dev, regs);
 	if (err)
@@ -107,20 +150,18 @@ static int ohci_usb_probe(struct udevice *dev)
 	return 0;
 
 phy_err:
-	if (generic_phy_valid(&priv->phy)) {
-		ret = generic_phy_exit(&priv->phy);
-		if (ret)
-			pr_err("failed to release phy\n");
-	}
+	ret = ohci_shutdown_phy(dev);
+	if (ret)
+		dev_err(dev, "failed to shutdown usb phy\n");
 
 reset_err:
 	ret = reset_release_all(priv->resets, priv->reset_count);
 	if (ret)
-		pr_err("failed to assert all resets\n");
+		dev_err(dev, "failed to assert all resets\n");
 clk_err:
 	ret = clk_release_all(priv->clocks, priv->clock_count);
 	if (ret)
-		pr_err("failed to disable all clocks\n");
+		dev_err(dev, "failed to disable all clocks\n");
 
 	return err;
 }
@@ -134,11 +175,9 @@ static int ohci_usb_remove(struct udevice *dev)
 	if (ret)
 		return ret;
 
-	if (generic_phy_valid(&priv->phy)) {
-		ret = generic_phy_exit(&priv->phy);
-		if (ret)
-			return ret;
-	}
+	ret = ohci_shutdown_phy(dev);
+	if (ret)
+		return ret;
 
 	ret = reset_release_all(priv->resets, priv->reset_count);
 	if (ret)
@@ -159,6 +198,6 @@ U_BOOT_DRIVER(ohci_generic) = {
 	.probe = ohci_usb_probe,
 	.remove = ohci_usb_remove,
 	.ops	= &ohci_usb_ops,
-	.priv_auto_alloc_size = sizeof(struct generic_ohci),
+	.priv_auto	= sizeof(struct generic_ohci),
 	.flags	= DM_FLAG_ALLOC_PRIV_DMA,
 };

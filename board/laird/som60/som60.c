@@ -7,14 +7,16 @@
  */
 
 #include <common.h>
-#include <environment.h>
+#include <init.h>
+#include <env.h>
+#include <net.h>
 #include <debug_uart.h>
+#include <linux/delay.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
 #include <asm/arch/clk.h>
 
-#include <asm/arch/sama5_sfr.h>
 #include <asm/arch/sama5d3_smc.h>
 #include <asm/arch/atmel_mpddrc.h>
 #include <asm/arch/at91_sck.h>
@@ -22,24 +24,10 @@
 #include <linux/ctype.h>
 #include <linux/mtd/rawnand.h>
 
-#include <uboot_aes.h>
-
-#include <../drivers/crypto/atmel_trng.h>
-
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef CONFIG_FIT_SIGNATURE
 #define FS_MAX_KEY_SIZE	64
 #define FS_KEY_WINDOW	0x31e000
-
-struct key_prop {
-	const void *cipher_key;
-	int cipher_key_len;
-	const void *cmac_key;
-	int cmac_key_len;
-	const void *iv;
-};
-#endif
 
 static unsigned atmel_encode_ncycles(unsigned int ncycles,
 				     unsigned int msbpos,
@@ -276,71 +264,6 @@ int atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 	return 0;
 }
 
-#ifdef CONFIG_FIT_SIGNATURE
-void board_fit_image_post_process(void **p_image, size_t *p_size)
-{
-	u8 *image = (u8 *)*p_image;
-	int enc_node, aes_blocks;
-	struct key_prop prop;
-	u8 key_exp[AES_EXPAND_KEY_LENGTH] __attribute__ ((aligned(4)));
-	u8 padding;
-
-	enc_node = fdt_subnode_offset(gd->fdt_blob, 0, "encryption");
-	if (enc_node < 0) {
-		debug("No encryption node found\n");
-		return;
-	}
-
-	prop.cipher_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cipher-key",
-		&prop.cipher_key_len);
-	if (!prop.cipher_key)
-		return;
-
-	prop.cmac_key = fdt_getprop(gd->fdt_blob, enc_node, "aes,cmac-key",
-		&prop.cmac_key_len);
-	prop.iv = fdt_getprop(gd->fdt_blob, enc_node, "aes,iv", NULL);
-
-	aes_expand_key((u8 *)prop.cipher_key, key_exp);
-
-	puts("   Decrypting ... ");
-	/* got to be 128bit */
-	aes_blocks = DIV_ROUND_UP(*p_size, AES_KEY_LENGTH);
-	aes_cbc_decrypt_blocks(key_exp, (u8 *)prop.iv, image, image, aes_blocks);
-	puts("OK\n");
-
-	/* Reduce PKCS7 padded length */
-	padding = *(image + (*p_size - 1));
-	*p_size = *p_size - padding;
-}
-
-void som60_fs_key_inject(void)
-{
-	u8	*key = (u8 *)FS_KEY_WINDOW;
-	const void *fs_key;
-	int fs_key_len;
-	int enc_node;
-
-	enc_node = fdt_subnode_offset(gd->fdt_blob, 0, "encryption");
-	if (enc_node < 0) {
-		debug("No encryption node found\n");
-		return;
-	}
-
-	fs_key = fdt_getprop(gd->fdt_blob, enc_node, "laird,fs-key", &fs_key_len);
-	if (!fs_key) {
-		debug("No fs-key property found\n");
-		return;
-	}
-
-	if (fs_key_len != FS_MAX_KEY_SIZE) {
-		debug("Key must be max size\n");
-		return;
-	}
-
-	memcpy(key, fs_key, fs_key_len);
-}
-#endif
-
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT
 void board_debug_uart_init(void)
 {
@@ -376,6 +299,42 @@ void board_debug_uart_init(void)
 }
 #endif
 
+int board_early_init_f(void)
+{
+    return 0;
+}
+
+#ifndef CONFIG_SPL_BUILD
+
+#ifdef CONFIG_FIT_SIGNATURE
+void som60_fs_key_inject(void)
+{
+	u8	*key = (u8 *)FS_KEY_WINDOW;
+	const void *fs_key;
+	int fs_key_len;
+	int enc_node;
+
+	enc_node = fdt_subnode_offset(gd->fdt_blob, 0, "encryption");
+	if (enc_node < 0) {
+		debug("No encryption node found\n");
+		return;
+	}
+
+	fs_key = fdt_getprop(gd->fdt_blob, enc_node, "laird,fs-key", &fs_key_len);
+	if (!fs_key) {
+		debug("No fs-key property found\n");
+		return;
+	}
+
+	if (fs_key_len != FS_MAX_KEY_SIZE) {
+		debug("Key must be max size\n");
+		return;
+	}
+
+	memcpy(key, fs_key, fs_key_len);
+}
+#endif
+
 int board_late_init(void)
 {
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
@@ -403,15 +362,6 @@ int board_late_init(void)
     return 0;
 }
 
-int board_early_init_f(void)
-{
-#ifdef CONFIG_DEBUG_UART
-	debug_uart_init();
-#endif
-
-    return 0;
-}
-
 void __weak som60_custom_hw_init(void)
 {
 }
@@ -421,14 +371,12 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 
-#ifdef CONFIG_NAND
+#ifdef CONFIG_MTD_RAW_NAND
 	at91_periph_clk_enable(ATMEL_ID_SMC);
 
 	/* Disable Flash Write Protect discrete */
 	at91_set_pio_output(AT91_PIO_PORTE, 14, 1);
 #endif
-
-	atmel_trng_init();
 
 	som60_custom_hw_init();
 
@@ -441,9 +389,7 @@ int board_init(void)
 
 void board_quiesce_devices(void)
 {
-	atmel_trng_remove();
-
-#ifdef CONFIG_NAND
+#ifdef CONFIG_MTD_RAW_NAND
 #ifndef CONFIG_TARGET_WB50N
 	/* Activate Flash Write Protect discrete,
 	 * so that flash enter standby if not used in kernel */
@@ -464,8 +410,8 @@ int dram_init(void)
 	return 0;
 }
 
-/* SPL */
-#ifdef CONFIG_SPL_BUILD
+#else /* SPL */
+
 void at91_disable_smd_clock(void)
 {
 	struct at91_pmc *pmc = (struct at91_pmc *)ATMEL_BASE_PMC;
@@ -571,6 +517,12 @@ void spl_board_init(void)
 
 	at91_disable_smd_clock();
 
+	/* Configure and disable Radio */
+#ifdef CONFIG_TARGET_WB50N
+	at91_set_pio_output(AT91_PIO_PORTE, 3, 0);
+#endif
+	at91_set_pio_output(AT91_PIO_PORTE, 5, 0);
+
 #ifdef CONFIG_NAND_BOOT
 	const struct nand_data_interface *conf;
 
@@ -619,7 +571,6 @@ static void lpddr1_conf(struct atmel_mpddrc_config *lpddr1)
 
 void mem_init(void)
 {
-	struct atmel_sfr *sfr = (struct atmel_sfr *)ATMEL_BASE_SFR;
 	const struct atmel_mpddr *mpddr = (struct atmel_mpddr *)ATMEL_BASE_MPDDRC;
 
 	struct atmel_mpddrc_config lpddr1;
@@ -627,9 +578,7 @@ void mem_init(void)
 
 	lpddr1_conf(&lpddr1);
 
-	reg = readl(&sfr->ddrcfg);
-	reg |= (ATMEL_SFR_DDRCFG_FDQIEN | ATMEL_SFR_DDRCFG_FDQSIEN);
-	writel(reg, &sfr->ddrcfg);
+	configure_ddrcfg_input_buffers(true);
 
 	/* Enable MPDDR clock */
 	at91_periph_clk_enable(ATMEL_ID_MPDDRC);
@@ -666,9 +615,7 @@ void mem_init(void)
 	/* LPDDRAM1 Controller initialize */
 	lpddr1_init(ATMEL_BASE_MPDDRC, ATMEL_BASE_DDRCS, &lpddr1);
 
-	reg = readl(&sfr->ddrcfg);
-	reg &= ~(ATMEL_SFR_DDRCFG_FDQIEN | ATMEL_SFR_DDRCFG_FDQSIEN);
-	writel(reg, &sfr->ddrcfg);
+	configure_ddrcfg_input_buffers(false);
 }
 
 void at91_pmc_init(void)
