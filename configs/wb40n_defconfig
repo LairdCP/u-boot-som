@@ -94,3 +94,4 @@ CONFIG_WDT=y
 CONFIG_WDT_AT91=y
 # CONFIG_REGEX is not set
 # CONFIG_GZIP is not set
+# CONFIG_TOOLS_LIBCRYPTO is not set
