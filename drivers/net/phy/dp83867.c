@@ -93,7 +93,7 @@
 #define DEFAULT_FIFO_DEPTH	DP83867_PHYCR_FIFO_DEPTH_4_B_NIB
 
 /* IO_MUX_CFG bits */
-#define DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL	0x1f
+#define DP83867_IO_MUX_CFG_IO_IMPEDANCE_MASK	0x1f
 
 #define DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX	0x0
 #define DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN	0x1f
@@ -285,6 +285,7 @@ static int dp83867_config(struct phy_device *phydev)
 {
 	struct dp83867_private *dp83867;
 	unsigned int val, delay, cfg2;
+	unsigned int val50, vale50, valr;
 	int ret, bs;
 
 	dp83867 = (struct dp83867_private *)phydev->priv;
@@ -389,12 +390,10 @@ static int dp83867_config(struct phy_device *phydev)
 	}
 
 	if (dp83867->io_impedance != DP83867_IO_IMPEDANCE_OHM_CAL) {
-		val = phy_read_mmd_indirect(phydev,
-					    DP83867_IO_MUX_CFG,
-					    DP83867_DEVADDR,
-					    phydev->addr);
+		val = phy_read_mmd(phydev, DP83867_DEVADDR, 
+			DP83867_IO_MUX_CFG);
 
-		val50 = val & DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
+		val50 = val & DP83867_IO_MUX_CFG_IO_IMPEDANCE_MASK;
 
 		vale50 = dp83867_interp(DP83867_IO_IMPEDANCE_OHM_CAL);
 		valr = dp83867_interp(dp83867->io_impedance);
@@ -405,12 +404,11 @@ static int dp83867_config(struct phy_device *phydev)
 		else if (valr > DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN)
 			valr = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN;
 
-		val &= ~DP83867_IO_MUX_CFG_IO_IMPEDANCE_CTRL;
+		val &= ~DP83867_IO_MUX_CFG_IO_IMPEDANCE_MASK;
 		val |= valr;
 
-		phy_write_mmd_indirect(phydev, DP83867_IO_MUX_CFG,
-				       DP83867_DEVADDR, phydev->addr,
-				       val);
+		phy_write_mmd(phydev, DP83867_DEVADDR,
+			DP83867_IO_MUX_CFG, val);
 	}
 
 	if (dp83867->port_mirroring != DP83867_PORT_MIRRORING_KEEP)
