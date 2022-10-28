@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2018 Laird Connectivity
- * 	Ben Whitten <ben.whitten@lairdconnect.com>
- * 	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
+ *	Ben Whitten <ben.whitten@lairdconnect.com>
+ *	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -9,6 +9,7 @@
 #include <common.h>
 #include <environment.h>
 #include <debug_uart.h>
+#include <version.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
@@ -378,6 +379,9 @@ void board_debug_uart_init(void)
 
 int board_late_init(void)
 {
+	char *version;
+	int save;
+
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 	char name[32], *p;
 
@@ -389,8 +393,13 @@ int board_late_init(void)
 	env_set("lrd_name", name);
 #endif
 
+	version = env_get("version");
+	save = !version || strcmp(version, PLAIN_VERSION);
+	if (save)
+		env_set("version", PLAIN_VERSION);
+
 #ifndef CONFIG_TARGET_IG60
-	if (gd->flags & GD_FLG_ENV_DEFAULT) {
+	if ((gd->flags & GD_FLG_ENV_DEFAULT) || save) {
 		puts("Saving default environment...\n");
 		env_save();
 	}
