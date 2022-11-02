@@ -3,11 +3,14 @@
 #include <common.h>
 #include <dm.h>
 #include <malloc.h>
+#include <efi.h>
+#include <efi_loader.h>
 #include <errno.h>
 #include <fsl_ddr.h>
 #include <fdt_support.h>
 #include <asm/global_data.h>
 #include <linux/libfdt.h>
+#include <linux/kernel.h>
 #include <env_internal.h>
 #include <asm/arch-fsl-layerscape/soc.h>
 #include <asm/arch-fsl-layerscape/fsl_icid.h>
@@ -21,7 +24,27 @@
 #include <fdtdec.h>
 #include <miiphy.h>
 
+#include "sl28.h"
+
 DECLARE_GLOBAL_DATA_PTR;
+
+#if CONFIG_IS_ENABLED(EFI_HAVE_CAPSULE_SUPPORT)
+struct efi_fw_image fw_images[] = {
+	{
+		.image_type_id = KONTRON_SL28_FIT_IMAGE_GUID,
+		.fw_name = u"KONTRON-SL28-FIT",
+		.image_index = 1,
+	},
+};
+
+struct efi_capsule_update_info update_info = {
+	.dfu_string = "sf 0:0=u-boot-bin raw 0x210000 0x1d0000;"
+			"u-boot-env raw 0x3e0000 0x20000",
+	.images = fw_images,
+};
+
+u8 num_image_type_guids = ARRAY_SIZE(fw_images);
+#endif /* EFI_HAVE_CAPSULE_SUPPORT */
 
 int board_early_init_f(void)
 {
@@ -31,15 +54,33 @@ int board_early_init_f(void)
 
 int board_init(void)
 {
-	if (CONFIG_IS_ENABLED(FSL_CAAM))
-		sec_init();
-
 	return 0;
 }
 
 int board_eth_init(struct bd_info *bis)
 {
 	return pci_eth_init(bis);
+}
+
+enum env_location env_get_location(enum env_operation op, int prio)
+{
+	enum boot_source src = sl28_boot_source();
+
+	if (prio)
+		return ENVL_UNKNOWN;
+
+	if (!CONFIG_IS_ENABLED(ENV_IS_IN_SPI_FLASH))
+		return ENVL_NOWHERE;
+
+	/* write and erase always operate on the environment */
+	if (op == ENVOP_SAVE || op == ENVOP_ERASE)
+		return ENVL_SPI_FLASH;
+
+	/* failsafe boot will always use the compiled-in default environment */
+	if (src == BOOT_SOURCE_SPI)
+		return ENVL_NOWHERE;
+
+	return ENVL_SPI_FLASH;
 }
 
 static int __sl28cpld_read(uint reg)
@@ -85,8 +126,28 @@ static void stop_recovery_watchdog(void)
 		wdt_stop(dev);
 }
 
+static void sl28_set_prompt(void)
+{
+	enum boot_source src = sl28_boot_source();
+
+	switch (src) {
+	case BOOT_SOURCE_SPI:
+		env_set("PS1", "[FAILSAFE] => ");
+		break;
+	case BOOT_SOURCE_SDHC:
+		env_set("PS1", "[SDHC] => ");
+		break;
+	default:
+		env_set("PS1", NULL);
+		break;
+	}
+}
+
 int fsl_board_late_init(void)
 {
+	if (IS_ENABLED(CONFIG_CMDLINE_PS_SUPPORT))
+		sl28_set_prompt();
+
 	/*
 	 * Usually, the after a board reset, the watchdog is enabled by
 	 * default. This is to supervise the bootloader boot-up. Therefore,

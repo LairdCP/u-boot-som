@@ -48,6 +48,7 @@ struct fdt_region;
 extern ulong image_load_addr;		/* Default Load Address */
 extern ulong image_save_addr;		/* Default Save Address */
 extern ulong image_save_size;		/* Default Save Size */
+extern ulong image_load_offset;	/* Default Load Address Offset */
 
 /* An invalid size, meaning that the image size is not known */
 #define IMAGE_SIZE_INVAL	(-1UL)
@@ -227,6 +228,7 @@ enum {
 	IH_TYPE_IMX8IMAGE,		/* Freescale IMX8Boot Image	*/
 	IH_TYPE_COPRO,			/* Coprocessor Image for remoteproc*/
 	IH_TYPE_SUNXI_EGON,		/* Allwinner eGON Boot Image */
+	IH_TYPE_SUNXI_TOC0,		/* Allwinner TOC0 Boot Image */
 
 	IH_TYPE_COUNT,			/* Number of image types */
 };
@@ -350,6 +352,7 @@ typedef struct bootm_headers {
 #define	BOOTM_STATE_OS_PREP	(0x00000100)
 #define	BOOTM_STATE_OS_FAKE_GO	(0x00000200)	/* 'Almost' run the OS */
 #define	BOOTM_STATE_OS_GO	(0x00000400)
+#define	BOOTM_STATE_PRE_LOAD	0x00000800
 	int		state;
 
 #if defined(CONFIG_LMB) && !defined(USE_HOSTCC)
@@ -1011,11 +1014,96 @@ int fit_image_get_data_size_unciphered(const void *fit, int noffset,
 int fit_image_get_data_and_size(const void *fit, int noffset,
 				const void **data, size_t *size);
 
+/**
+ * fit_get_data_node() - Get verified image data for an image
+ * @fit: Pointer to the FIT format image header
+ * @image_uname: The name of the image node
+ * @data: A pointer which will be filled with the location of the image data
+ * @size: A pointer which will be filled with the size of the image data
+ *
+ * This function looks up the location and size of an image specified by its
+ * name. For example, if you had a FIT like::
+ *
+ *     images {
+ *         my-firmware {
+ *             ...
+ *	   };
+ *      };
+ *
+ * Then you could look up the data location and size of the my-firmware image
+ * by calling this function with @image_uname set to "my-firmware". This
+ * function also verifies the image data (if enabled) before returning. The
+ * image description is printed out on success. @data and @size will not be
+ * modified on faulure.
+ *
+ * Return:
+ * * 0 on success
+ * * -EINVAL if the image could not be verified
+ * * -ENOENT if there was a problem getting the data/size
+ * * Another negative error if there was a problem looking up the image node.
+ */
+int fit_get_data_node(const void *fit, const char *image_uname,
+		      const void **data, size_t *size);
+
+/**
+ * fit_get_data_conf_prop() - Get verified image data for a property in /conf
+ * @fit: Pointer to the FIT format image header
+ * @prop_name: The name of the property in /conf referencing the image
+ * @data: A pointer which will be filled with the location of the image data
+ * @size: A pointer which will be filled with the size of the image data
+ *
+ * This function looks up the location and size of an image specified by a
+ * property in /conf. For example, if you had a FIT like::
+ *
+ *     images {
+ *         my-firmware {
+ *             ...
+ *	   };
+ *      };
+ *
+ *      configurations {
+ *          default = "conf-1";
+ *          conf-1 {
+ *              some-firmware = "my-firmware";
+ *          };
+ *      };
+ *
+ * Then you could look up the data location and size of the my-firmware image
+ * by calling this function with @prop_name set to "some-firmware". This
+ * function also verifies the image data (if enabled) before returning. The
+ * image description is printed out on success. @data and @size will not be
+ * modified on faulure.
+ *
+ * Return:
+ * * 0 on success
+ * * -EINVAL if the image could not be verified
+ * * -ENOENT if there was a problem getting the data/size
+ * * Another negative error if there was a problem looking up the configuration
+ *   or image node.
+ */
+int fit_get_data_conf_prop(const void *fit, const char *prop_name,
+			   const void **data, size_t *size);
+
 int fit_image_hash_get_algo(const void *fit, int noffset, const char **algo);
 int fit_image_hash_get_value(const void *fit, int noffset, uint8_t **value,
 				int *value_len);
 
 int fit_set_timestamp(void *fit, int noffset, time_t timestamp);
+
+/**
+ * fit_pre_load_data() - add public key to fdt blob
+ *
+ * Adds public key to the node pre load.
+ *
+ * @keydir:	Directory containing keys
+ * @keydest:	FDT blob to write public key
+ * @fit:	Pointer to the FIT format image header
+ *
+ * returns:
+ *	0, on success
+ *	< 0, on failure
+ */
+int fit_pre_load_data(const char *keydir, void *keydest, void *fit);
 
 int fit_cipher_data(const char *keydir, void *keydest, void *fit,
 		    const char *comment, int require_keys,
@@ -1302,7 +1390,7 @@ ll_entry_declare(struct crypto_algo, __name, cryptos)
 struct padding_algo {
 	const char *name;
 	int (*verify)(struct image_sign_info *info,
-		      uint8_t *pad, int pad_len,
+		      const uint8_t *pad, int pad_len,
 		      const uint8_t *hash, int hash_len);
 };
 
@@ -1333,6 +1421,19 @@ struct crypto_algo *image_get_crypto_algo(const char *full_name);
  * Return: pointer to algorithm information, or NULL if not found
  */
 struct padding_algo *image_get_padding_algo(const char *name);
+
+/**
+ * image_pre_load() - Manage pre load header
+ *
+ * Manage the pre-load header before launching the image.
+ * It checks the signature of the image. It also set the
+ * variable image_load_offset to skip this header before
+ * launching the image.
+ *
+ * @param addr		Address of the image
+ * @return: 0 on success, -ve on error
+ */
+int image_pre_load(ulong addr);
 
 /**
  * fit_image_verify_required_sigs() - Verify signatures marked as 'required'
