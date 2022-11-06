@@ -15,9 +15,6 @@
 #define CONFIG_SYS_AT91_SLOW_CLOCK      32768
 #define CONFIG_SYS_AT91_MAIN_CLOCK      18432000 /* from 18.432 MHz crystal */
 
-/* general purpose I/O */
-#define CONFIG_ATMEL_LEGACY	/* required until (g)pio is fixed */
-
 /* serial console */
 #define CONFIG_USART_BASE               ATMEL_BASE_DBGU
 #define CONFIG_USART_ID                 ATMEL_ID_SYS
@@ -26,8 +23,8 @@
 #define CONFIG_SYS_SDRAM_BASE           ATMEL_BASE_CS1
 #define CONFIG_SYS_SDRAM_SIZE           SZ_32M
 
-#define CONFIG_SYS_INIT_SP_ADDR \
-    (ATMEL_BASE_SRAM1 + SZ_16K - GENERATED_GBL_DATA_SIZE)
+#define CONFIG_SYS_INIT_RAM_ADDR        ATMEL_BASE_SRAM1
+#define CONFIG_SYS_INIT_RAM_SIZE        SZ_16K
 
 /* NAND flash */
 #define CONFIG_SYS_MAX_NAND_DEVICE      1
