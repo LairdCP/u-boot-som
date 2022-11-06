@@ -190,6 +190,13 @@ static int dp83867_of_init(struct phy_device *phydev)
 		dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX;
 	else if (ofnode_read_bool(node, "ti,min-output-impedance"))
 		dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN;
+	else if (!ofnode_read_u32(node, "ti,output-impedance",
+			&dp83867->io_impedance)) {
+		if (dp83867->io_impedance > DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX)
+			dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MAX;
+		else if (dp83867->io_impedance < DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN)
+			dp83867->io_impedance = DP83867_IO_MUX_CFG_IO_IMPEDANCE_MIN;
+	}
 	else
 		dp83867->io_impedance = -EINVAL;
 
