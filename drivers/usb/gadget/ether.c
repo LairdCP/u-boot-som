@@ -22,6 +22,7 @@
 #include <malloc.h>
 #include <memalign.h>
 #include <linux/ctype.h>
+#include <watchdog.h>
 
 #include "gadget_chips.h"
 #include "rndis.h"
@@ -1048,13 +1049,6 @@ static int eth_set_config(struct eth_dev *dev, unsigned number,
 	int			result = 0;
 	struct usb_gadget	*gadget = dev->gadget;
 
-	if (gadget_is_sa1100(gadget)
-			&& dev->config
-			&& dev->tx_qlen != 0) {
-		/* tx fifo is full, but we can't clear it...*/
-		pr_err("can't change configurations");
-		return -ESPIPE;
-	}
 	eth_reset_config(dev);
 
 	switch (number) {
@@ -1325,24 +1319,6 @@ eth_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		if (!cdc_active(dev) && wIndex != 0)
 			break;
 
-		/*
-		 * PXA hardware partially handles SET_INTERFACE;
-		 * we need to kluge around that interference.
-		 */
-		if (gadget_is_pxa(gadget)) {
-			value = eth_set_config(dev, DEV_CONFIG_VALUE,
-						GFP_ATOMIC);
-			/*
-			 * PXA25x driver use non-CDC ethernet gadget.
-			 * But only _CDC and _RNDIS code can signalize
-			 * that network is working. So we signalize it
-			 * here.
-			 */
-			dev->network_started = 1;
-			debug("USB network up!\n");
-			goto done_set_intf;
-		}
-
 #ifdef CONFIG_USB_ETH_CDC
 		switch (wIndex) {
 		case 0:		/* control/master intf */
@@ -1386,8 +1362,6 @@ eth_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		 */
 		debug("set_interface ignored!\n");
 #endif /* CONFIG_USB_ETH_CDC */
-
-done_set_intf:
 		break;
 	case USB_REQ_GET_INTERFACE:
 		if (ctrl->bRequestType != (USB_DIR_IN|USB_RECIP_INTERFACE)
@@ -1939,8 +1913,10 @@ static int eth_stop(struct eth_dev *dev)
 #ifdef RNDIS_COMPLETE_SIGNAL_DISCONNECT
 		/* Wait until host receives OID_GEN_MEDIA_CONNECT_STATUS */
 		ts = get_timer(0);
-		while (get_timer(ts) < timeout)
+		while (get_timer(ts) < timeout) {
+			WATCHDOG_RESET();
 			usb_gadget_handle_interrupts(0);
+		}
 #endif
 
 		rndis_uninit(dev->rndis_config);
@@ -2034,24 +2010,13 @@ static int eth_bind(struct usb_gadget *gadget)
 	 * standard protocol is _strongly_ preferred for interop purposes.
 	 * (By everyone except Microsoft.)
 	 */
-	if (gadget_is_pxa(gadget)) {
-		/* pxa doesn't support altsettings */
-		cdc = 0;
-	} else if (gadget_is_musbhdrc(gadget)) {
+	if (gadget_is_musbhdrc(gadget)) {
 		/* reduce tx dma overhead by avoiding special cases */
 		zlp = 0;
 	} else if (gadget_is_sh(gadget)) {
 		/* sh doesn't support multiple interfaces or configs */
 		cdc = 0;
 		rndis = 0;
-	} else if (gadget_is_sa1100(gadget)) {
-		/* hardware can't write zlps */
-		zlp = 0;
-		/*
-		 * sa1100 CAN do CDC, without status endpoint ... we use
-		 * non-CDC to be compatible with ARM Linux-2.4 "usb-eth".
-		 */
-		cdc = 0;
 	}
 
 	gcnum = usb_gadget_controller_number(gadget);
@@ -2408,9 +2373,10 @@ static int _usb_eth_init(struct ether_priv *priv)
 	while (!dev->network_started) {
 		/* Handle control-c and timeouts */
 		if (ctrlc() || (get_timer(ts) > timeout)) {
-			pr_err("The remote end did not respond in time.");
+			pr_err("The remote end did not respond in time.\n");
 			goto fail;
 		}
+		WATCHDOG_RESET();
 		usb_gadget_handle_interrupts(0);
 	}
 
@@ -2480,6 +2446,7 @@ static int _usb_eth_send(struct ether_priv *priv, void *packet, int length)
 			printf("timeout sending packets to usb ethernet\n");
 			return -1;
 		}
+		WATCHDOG_RESET();
 		usb_gadget_handle_interrupts(0);
 	}
 	free(rndis_pkt);

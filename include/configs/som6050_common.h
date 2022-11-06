@@ -33,12 +33,8 @@
 #define CONFIG_NR_DRAM_BANKS            1
 #define CONFIG_SYS_SDRAM_BASE           ATMEL_BASE_DDRCS
 
-#ifdef CONFIG_SPL_BUILD
-#define CONFIG_SYS_INIT_SP_ADDR         (ATMEL_BASE_SRAM1 + SZ_32K - 4)
-#else
-#define CONFIG_SYS_INIT_SP_ADDR \
-	(ATMEL_BASE_SRAM1 + SZ_32K - GENERATED_GBL_DATA_SIZE)
-#endif
+#define CONFIG_SYS_INIT_RAM_ADDR	ATMEL_BASE_SRAM1
+#define CONFIG_SYS_INIT_RAM_SIZE	SZ_32K
 
 /* NAND flash */
 #define CONFIG_SYS_MAX_NAND_DEVICE      1
@@ -50,27 +46,11 @@
 #define CONFIG_SYS_NAND_MASK_CLE        (1 << 22)
 
 /* System */
-#define CONFIG_SYS_CBSIZE               1024
-#define CONFIG_SYS_BARGSIZE             CONFIG_SYS_CBSIZE
-#define CONFIG_SYS_MAXARGS              32
-
 #define CONFIG_SYS_MONITOR_LEN          SZ_512K /* max u-boot size */
-#ifndef CONFIG_SPL_BUILD
-#define CONFIG_SYS_BOOTM_LEN	        SZ_16M
-#endif
 
 #ifdef CONFIG_I2C_EEPROM
 #define SYS_I2C_MAC_OFFSET		0
 #endif
-
-/* SPL */
-#define CONFIG_SPL_MAX_SIZE             0x10000
-
-#define CONFIG_SPL_BSS_START_ADDR       ATMEL_BASE_SRAM1 + SZ_32K
-#define CONFIG_SPL_BSS_MAX_SIZE         SZ_32K
-
-#define CONFIG_SYS_MMCSD_FS_BOOT_PARTITION	1
-#define CONFIG_SPL_FS_LOAD_PAYLOAD_NAME	"u-boot.itb"
 
 #define DEFAULT_ENV_SETTINGS \
 	"autoload=no\0" \
