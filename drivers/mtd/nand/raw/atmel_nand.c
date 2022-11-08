@@ -38,10 +38,6 @@
 
 #ifdef CONFIG_ATMEL_NAND_HW_PMECC
 
-#ifdef CONFIG_SPL_BUILD
-#undef CONFIG_SYS_NAND_ONFI_DETECTION
-#endif
-
 struct atmel_nand_host {
 	struct pmecc_regs __iomem *pmecc;
 	struct pmecc_errloc_regs __iomem *pmerrloc;
@@ -1282,7 +1278,7 @@ static struct nand_chip nand_chip;
 static int nand_command(int block, int page, uint32_t offs, u8 cmd)
 {
 	struct nand_chip *this = mtd_to_nand(mtd);
-	int page_addr = page + block * CONFIG_SYS_NAND_PAGE_COUNT;
+	int page_addr = page + block * mtd->erasesize / mtd->writesize;
 	void (*hwctrl)(struct mtd_info *mtd, int cmd,
 			unsigned int ctrl) = this->cmd_ctrl;
 
@@ -1290,26 +1286,38 @@ static int nand_command(int block, int page, uint32_t offs, u8 cmd)
 		;
 
 	if (cmd == NAND_CMD_READOOB) {
-		offs += CONFIG_SYS_NAND_PAGE_SIZE;
+		offs += mtd->writesize;
 		cmd = NAND_CMD_READ0;
 	}
 
 	hwctrl(mtd, cmd, NAND_CTRL_CLE | NAND_CTRL_CHANGE);
 
-	if ((this->options & NAND_BUSWIDTH_16) && !nand_opcode_8bits(cmd))
-		offs >>= 1;
+	if (offs != -1) {
+		if ((this->options & NAND_BUSWIDTH_16) && !nand_opcode_8bits(cmd))
+			offs >>= 1;
 
-	hwctrl(mtd, offs & 0xff, NAND_CTRL_ALE | NAND_CTRL_CHANGE);
-	hwctrl(mtd, (offs >> 8) & 0xff, NAND_CTRL_ALE);
-	hwctrl(mtd, (page_addr & 0xff), NAND_CTRL_ALE);
-	hwctrl(mtd, ((page_addr >> 8) & 0xff), NAND_CTRL_ALE);
-#ifdef CONFIG_SYS_NAND_5_ADDR_CYCLE
-	hwctrl(mtd, (page_addr >> 16) & 0x0f, NAND_CTRL_ALE);
-#endif
+		hwctrl(mtd, offs & 0xff, NAND_CTRL_ALE | NAND_CTRL_CHANGE);
+		hwctrl(mtd, (offs >> 8) & 0xff, NAND_CTRL_ALE);
+	}
+
+	if (block != -1 && page != -1) {
+		hwctrl(mtd, (page_addr & 0xff), NAND_CTRL_ALE);
+		hwctrl(mtd, ((page_addr >> 8) & 0xff), NAND_CTRL_ALE);
+		if (this->options & NAND_ROW_ADDR_3)
+			hwctrl(mtd, (page_addr >> 16) & 0x0f, NAND_CTRL_ALE);
+	}
+
 	hwctrl(mtd, NAND_CMD_NONE, NAND_NCE | NAND_CTRL_CHANGE);
 
-	hwctrl(mtd, NAND_CMD_READSTART, NAND_CTRL_CLE | NAND_CTRL_CHANGE);
-	hwctrl(mtd, NAND_CMD_NONE, NAND_NCE | NAND_CTRL_CHANGE);
+	switch (cmd) {
+	case NAND_CMD_READID:
+		return 0;
+
+	case NAND_CMD_READ0:
+		hwctrl(mtd, NAND_CMD_READSTART, NAND_CTRL_CLE | NAND_CTRL_CHANGE);
+		hwctrl(mtd, NAND_CMD_NONE, NAND_NCE | NAND_CTRL_CHANGE);
+		break;
+	}
 
 	while (!this->dev_ready(mtd))
 		;
@@ -1317,11 +1325,203 @@ static int nand_command(int block, int page, uint32_t offs, u8 cmd)
 	return 0;
 }
 
+#ifdef CONFIG_SYS_NAND_ONFI_DETECTION
+static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
+{
+	int i;
+	while (len--) {
+		crc ^= *p++ << 8;
+		for (i = 0; i < 8; i++)
+			crc = (crc << 1) ^ ((crc & 0x8000) ? 0x8005 : 0);
+	}
+
+	return crc;
+}
+
+static int nand_flash_detect_ext_param_page(struct mtd_info *mtd,
+		struct nand_chip *chip, struct nand_onfi_params *p)
+{
+	struct onfi_ext_param_page *ep;
+	struct onfi_ext_section *s;
+	struct onfi_ext_ecc_info *ecc;
+	uint8_t *cursor;
+	int ret;
+	int len;
+	int i;
+
+	len = le16_to_cpu(p->ext_param_page_length) * 16;
+	ep = kmalloc(len, GFP_KERNEL);
+	if (!ep)
+		return -ENOMEM;
+
+	chip->read_buf(mtd, (uint8_t *)ep, len);
+
+	ret = -EINVAL;
+	if ((onfi_crc16(ONFI_CRC_BASE, ((uint8_t *)ep) + 2, len - 2)
+		!= le16_to_cpu(ep->crc))) {
+		pr_debug("fail in the CRC.\n");
+		goto ext_out;
+	}
+
+	/*
+	 * Check the signature.
+	 * Do not strictly follow the ONFI spec, maybe changed in future.
+	 */
+	if (memcmp((char *)ep->sig, "EPPS", 4)) {
+		pr_debug("The signature is invalid.\n");
+		goto ext_out;
+	}
+
+	/* find the ECC section. */
+	cursor = (uint8_t *)(ep + 1);
+	for (i = 0; i < ONFI_EXT_SECTION_MAX; i++) {
+		s = &ep->sections[i];
+		if (s->type == ONFI_SECTION_TYPE_2)
+			break;
+		cursor += s->length * 16;
+	}
+	if (i == ONFI_EXT_SECTION_MAX) {
+		pr_debug("We can not find the ECC section.\n");
+		goto ext_out;
+	}
+
+	/* get the info we want. */
+	ecc = (struct onfi_ext_ecc_info *)cursor;
+
+	if (!ecc->codeword_size) {
+		pr_debug("Invalid codeword size\n");
+		goto ext_out;
+	}
+
+	chip->ecc_strength_ds = ecc->ecc_bits;
+	chip->ecc_step_ds = 1 << ecc->codeword_size;
+	ret = 0;
+
+ext_out:
+	kfree(ep);
+	return ret;
+}
+
+static int nandflash_detect_onfi(struct nand_chip *chip)
+{
+	unsigned char onfi_ind[4];
+	struct nand_onfi_params *p = &chip->onfi_params;
+	int i, val;
+
+	nand_command(-1, -1, 0x20, NAND_CMD_READID);
+
+	chip->read_buf(mtd, onfi_ind, sizeof(onfi_ind));
+
+	if (memcmp(onfi_ind, "ONFI", 4)) {
+		pr_debug("NAND: ONFI not supported\n");
+		return -1;
+	}
+
+	pr_debug("NAND: ONFI flash detected\n");
+
+	nand_command(-1, -1, 0, NAND_CMD_PARAM);
+
+	nand_command(-1, -1, -1, NAND_CMD_READ0);
+
+	for (i = 0; i < 3; i++) {
+		chip->read_buf(mtd, (u8*)p, sizeof(*p));
+
+		if (onfi_crc16(ONFI_CRC_BASE, (unsigned char *)p, 254) == p->crc)
+			break;
+	}
+
+	if (i == 3) {
+		pr_debug("NAND: ONFI para CRC error!\n");
+		return -1;
+	}
+
+	val = le16_to_cpu(p->revision);
+	if (val & (1 << 5))
+		chip->onfi_version = 23;
+	else if (val & (1 << 4))
+		chip->onfi_version = 22;
+	else if (val & (1 << 3))
+		chip->onfi_version = 21;
+	else if (val & (1 << 2))
+		chip->onfi_version = 20;
+	else if (val & (1 << 1))
+		chip->onfi_version = 10;
+
+	mtd->writesize = le32_to_cpu(p->byte_per_page);
+
+	/*
+	 * pages_per_block and blocks_per_lun may not be a power-of-2 size
+	 * (don't ask me who thought of this...). MTD assumes that these
+	 * dimensions will be power-of-2, so just truncate the remaining area.
+	 */
+	mtd->erasesize = 1 << (fls(le32_to_cpu(p->pages_per_block)) - 1);
+	mtd->erasesize *= mtd->writesize;
+
+	mtd->oobsize = le16_to_cpu(p->spare_bytes_per_page);
+
+	/* See erasesize comment */
+	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
+	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
+	chip->bits_per_cell = p->bits_per_cell;
+
+	if (onfi_feature(chip) & ONFI_FEATURE_16_BIT_BUS)
+		chip->options |= NAND_BUSWIDTH_16;
+	else
+		chip->options &= ~NAND_BUSWIDTH_16;
+
+	if (p->ecc_bits != 0xff) {
+		chip->ecc_strength_ds = p->ecc_bits;
+		chip->ecc_step_ds = 512;
+	} else if (chip->onfi_version >= 21 &&
+		(onfi_feature(chip) & ONFI_FEATURE_EXT_PARAM_PAGE)) {
+
+		/* The Extended Parameter Page is supported since ONFI 2.1. */
+		if (nand_flash_detect_ext_param_page(mtd, chip, p))
+			pr_debug("Failed to detect ONFI extended param page\n");
+	} else {
+		pr_debug("Could not retrieve ONFI ECC requirements\n");
+	}
+
+	if (mtd->writesize > 512 || (chip->options & NAND_BUSWIDTH_16))
+		chip->badblockpos = NAND_LARGE_BADBLOCK_POS;
+	else
+		chip->badblockpos = NAND_SMALL_BADBLOCK_POS;
+
+	/* Calculate the address shift from the page size */
+	chip->page_shift = ffs(mtd->writesize) - 1;
+	/* Convert chipsize to number of pages per chip -1 */
+	chip->pagemask = (chip->chipsize >> chip->page_shift) - 1;
+
+	chip->bbt_erase_shift = chip->phys_erase_shift =
+		ffs(mtd->erasesize) - 1;
+	if (chip->chipsize & 0xffffffff)
+		chip->chip_shift = ffs((unsigned)chip->chipsize) - 1;
+	else {
+		chip->chip_shift = ffs((unsigned)(chip->chipsize >> 32));
+		chip->chip_shift += 32 - 1;
+	}
+
+	if (chip->chip_shift - chip->page_shift > 16)
+		chip->options |= NAND_ROW_ADDR_3;
+	else
+		chip->options &= ~NAND_ROW_ADDR_3;
+
+	chip->badblockbits = 8;
+
+	pr_debug("NAND: Page Bytes: %d, Spare Bytes: %d\n" \
+		 "NAND: ECC Correctability Bits: %d, ECC Sector Bytes: %d\n",
+		 mtd->writesize, mtd->oobsize,
+		 chip->ecc_strength_ds, chip->ecc_step_ds);
+
+	return 0;
+}
+#endif
+
 static int nand_is_bad_block(int block)
 {
 	struct nand_chip *this = mtd_to_nand(mtd);
 
-	nand_command(block, 0, CONFIG_SYS_NAND_BAD_BLOCK_POS, NAND_CMD_READOOB);
+	nand_command(block, 0, this->badblockpos, NAND_CMD_READOOB);
 
 	if (this->options & NAND_BUSWIDTH_16) {
 		if (readw(this->IO_ADDR_R) != 0xffff)
@@ -1446,6 +1646,18 @@ int board_nand_init(struct nand_chip *nand)
 	nand->bbt_options |= NAND_BBT_USE_FLASH;
 #endif
 
+#ifdef CONFIG_SYS_NAND_ONFI_DETECTION
+	nandflash_detect_onfi(nand);
+#else
+	mtd->erasesize = CONFIG_SYS_NAND_BLOCK_SIZE;
+	mtd->writesize = CONFIG_SYS_NAND_PAGE_SIZE;
+	mtd->oobsize = CONFIG_SYS_NAND_OOBSIZE;
+	nand_chip.badblockpos = CONFIG_SYS_NAND_BAD_BLOCK_POS;
+#ifdef CONFIG_SYS_NAND_5_ADDR_CYCLE
+	nand_chip.options |= NAND_ROW_ADDR_3;
+#endif
+#endif
+
 #ifdef CONFIG_ATMEL_NAND_HWECC
 #ifdef CONFIG_ATMEL_NAND_HW_PMECC
 	ret = atmel_pmecc_nand_init_params(nand, mtd);
@@ -1458,8 +1670,7 @@ int board_nand_init(struct nand_chip *nand)
 void nand_init(void)
 {
 	mtd = nand_to_mtd(&nand_chip);
-	mtd->writesize = CONFIG_SYS_NAND_PAGE_SIZE;
-	mtd->oobsize = CONFIG_SYS_NAND_OOBSIZE;
+
 	nand_chip.IO_ADDR_R = (void __iomem *)CONFIG_SYS_NAND_BASE;
 	nand_chip.IO_ADDR_W = (void __iomem *)CONFIG_SYS_NAND_BASE;
 	board_nand_init(&nand_chip);
@@ -1481,7 +1692,77 @@ void nand_deselect(void)
 		nand_chip.select_chip(mtd, -1);
 }
 
-#include "nand_spl_loaders.c"
+int nand_spl_load_image(uint32_t offs, unsigned int size, void *dst)
+{
+	unsigned int block, lastblock;
+	unsigned int page, page_offset, page_count;
+
+	/* offs has to be aligned to a page address! */
+	block = offs / mtd->erasesize;
+	lastblock = (offs + size - 1) / mtd->erasesize;
+	page = (offs % mtd->erasesize) / mtd->writesize;
+	page_offset = offs % mtd->writesize;
+	page_count = mtd->erasesize / mtd->writesize;
+
+	while (block <= lastblock) {
+		if (!nand_is_bad_block(block)) {
+			/* Skip bad blocks */
+			while (page < page_count) {
+				nand_read_page(block, page, dst);
+				/*
+				 * When offs is not aligned to page address the
+				 * extra offset is copied to dst as well. Copy
+				 * the image such that its first byte will be
+				 * at the dst.
+				 */
+				if (unlikely(page_offset)) {
+					memmove(dst, dst + page_offset,
+						mtd->writesize);
+					dst = (void *)((int)dst - page_offset);
+					page_offset = 0;
+				}
+				dst += mtd->writesize;
+				page++;
+			}
+
+			page = 0;
+		} else {
+			lastblock++;
+		}
+
+		block++;
+	}
+
+	return 0;
+}
+
+/**
+ * nand_spl_adjust_offset - Adjust offset from a starting sector
+ * @sector:	Address of the sector
+ * @offs:	Offset starting from @sector
+ *
+ * If one or more bad blocks are in the address space between @sector
+ * and @sector + @offs, @offs is increased by the NAND block size for
+ * each bad block found.
+ */
+u32 nand_spl_adjust_offset(u32 sector, u32 offs)
+{
+	unsigned int block, lastblock;
+
+	block = sector / mtd->erasesize;
+	lastblock = (sector + offs) / mtd->erasesize;
+
+	while (block <= lastblock) {
+		if (nand_is_bad_block(block)) {
+			offs += mtd->erasesize;
+			lastblock++;
+		}
+
+		block++;
+	}
+
+	return offs;
+}
 
 #else
 
