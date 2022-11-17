@@ -825,10 +825,10 @@ static int atmel_pmecc_nand_init_params(struct nand_chip *nand,
 #ifdef CONFIG_SYS_NAND_ONFI_DETECTION
 	host->pmecc_corr_cap = host->pmecc_sector_size = 0;
 
-#if CONFIG_PMECC_CAP > 0
+#ifdef CONFIG_PMECC_CAP
 	host->pmecc_corr_cap = CONFIG_PMECC_CAP;
 #endif
-#if CONFIG_PMECC_SECTOR_SIZE > 0
+#ifdef CONFIG_PMECC_SECTOR_SIZE
 	host->pmecc_sector_size = CONFIG_PMECC_SECTOR_SIZE;
 #endif
 	/* Get ECC requirement of ONFI parameters. And if CONFIG_PMECC_CAP or

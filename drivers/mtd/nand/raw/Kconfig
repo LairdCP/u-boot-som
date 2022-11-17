@@ -60,16 +60,16 @@ config ATMEL_NAND_HW_PMECC
 config PMECC_CAP
 	int "PMECC Correctable ECC Bits"
 	depends on ATMEL_NAND_HW_PMECC
-	default 0
+	default 2
 	help
-	  Correctable ECC bits, can be 0, 2, 4, 8, 12, and 24, 0 - autodetect.
+	  Correctable ECC bits, can be 2, 4, 8, 12, and 24.
 
 config PMECC_SECTOR_SIZE
 	int "PMECC Sector Size"
 	depends on ATMEL_NAND_HW_PMECC
-	default 0
+	default 512
 	help
-	  Sector size, in bytes, can be 0, 512 or 1024, 0 - autodetect.
+	  Sector size, in bytes, can be 512 or 1024.
 
 config SPL_GENERATE_ATMEL_PMECC_HEADER
 	bool "Atmel PMECC Header Generation"
