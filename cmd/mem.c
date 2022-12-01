@@ -1124,6 +1124,14 @@ static int do_mem_mtest(struct cmd_tbl *cmdtp, int flag, int argc,
 				count += errs;
 				errs = mem_test_bitflip(buf, start, end);
 			}
+#define ADD_LEGACY_TEST 1
+#ifdef ADD_LEGACY_TEST
+			if (errs == -1UL)
+				break;
+			count += errs;
+			errs = mem_test_quick(buf, start, end, pattern,
+					      iteration);
+#endif
 		} else {
 			errs = mem_test_quick(buf, start, end, pattern,
 					      iteration);
