@@ -553,41 +553,6 @@ void som60_fs_key_inject(void)
 }
 #endif
 
-/**
- * mac_read_from_fuse - read the MAC addresses from fuses
- *
- * This function reads the MAC addresses from fuses and sets the
- * appropriate environment variables for each one read.
- *
- * The environment variables are only set if they haven't been set already.
- * This ensures that any user-saved variables are never overwritten.
- *
- * This function must be called after relocation, and initr_env.
- *
- * This is not needed to get MAC addresses set from ROM/nvmem/fuses, but we
- * probably need to keep this, because even though this is not needed for uboot
- * or kernel, sometimes we do use address from env for interfaces like usb.
- */
-void mac_read_from_fuse(void)
-{
-	u8 mac[8];
-
-	for (int i = 0; i < MAX_NUM_PORTS; i++) {
-		enetaddr_fuse_read(mac, i);
-		if (is_valid_ether_addr(mac)) {
-			char enetvar[9];
-
-			sprintf(enetvar, i ? "eth%daddr" : "ethaddr", i);
-			/* Only initialize environment variables that are blank
-			 * (i.e. have not yet been set)
-			 * See README.enetaddr
-			 */
-			if (!env_get(enetvar))
-				eth_env_set_enetaddr(enetvar, mac);
-		}
-	}
-}
-
 int board_late_init(void)
 {
 	char *version;
@@ -603,8 +568,6 @@ int board_late_init(void)
 
 	env_set("lrd_name", name);
 #endif
-
-	mac_read_from_fuse();
 
 	version = env_get("version");
 	save = !version || strcmp(version, PLAIN_VERSION);
