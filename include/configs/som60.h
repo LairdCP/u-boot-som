@@ -9,6 +9,8 @@
 
 #include "som6050_common.h"
 
+#include "som60_common.h"
+
 #define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
 	"_formatubi=nand erase.part ubi;" \
 		"ubi part ubi;" \
@@ -19,32 +21,6 @@
 		"done;" \
 		"ubi create perm 1439000 dynamic\0"
 
-/* Timing and sizes for MT29C2G24MAAAAKAMD-5 */
-#define CONFIG_SYS_SDRAM_SIZE           SZ_128M
+#define SOM_LEGACY_RAM_IC               MT29C2G24MAAAAKAMD_5
 
-#define LPDDR_CR \
-	(ATMEL_MPDDRC_CR_NC_COL_10         |\
-	 ATMEL_MPDDRC_CR_NR_ROW_13         |\
-	 ATMEL_MPDDRC_CR_CAS_DDR_CAS3      |\
-	 ATMEL_MPDDRC_CR_ENRDM_ON          |\
-	 ATMEL_MPDDRC_CR_NDQS_DISABLED     |\
-	 ATMEL_MPDDRC_CR_DECOD_INTERLEAVED |\
-	 ATMEL_MPDDRC_CR_UNAL_SUPPORTED);
-
-#define LPDDR_TPR0 \
-	(6 << ATMEL_MPDDRC_TPR0_TRAS_OFFSET  |\
-	 2 << ATMEL_MPDDRC_TPR0_TRCD_OFFSET  |\
-	 2 << ATMEL_MPDDRC_TPR0_TWR_OFFSET   |\
-	 8 << ATMEL_MPDDRC_TPR0_TRC_OFFSET   |\
-	 2 << ATMEL_MPDDRC_TPR0_TRP_OFFSET   |\
-	 2 << ATMEL_MPDDRC_TPR0_TRRD_OFFSET  |\
-	 2 << ATMEL_MPDDRC_TPR0_TWTR_OFFSET  |\
-	 2 << ATMEL_MPDDRC_TPR0_TMRD_OFFSET);
-
-#define LPDDR_TPR1 \
-	(2 << ATMEL_MPDDRC_TPR1_TXP_OFFSET   |\
-	15 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |\
-	15 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |\
-	10 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET);
-
-#endif
+#endif // __SOM60_CONFIG_H
