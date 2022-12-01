@@ -135,8 +135,7 @@ void board_init_f(ulong dummy)
 
 	board_early_init_f();
 
-	mem_init();
-
 	preloader_console_init();
 
+	mem_init();
 }

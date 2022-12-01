@@ -17,6 +17,7 @@
 #include <asm/arch/gpio.h>
 #include <asm/arch/clk.h>
 
+#include <spl_menu.h>
 #include <som60_fuse.h>
 
 #include <asm/arch/sama5d3_smc.h>
@@ -917,6 +918,10 @@ void mem_init_lpddr1(const struct atmel_mpddrc_config *mpddr_value)
 
 void mem_init(void)
 {
+#if CONFIG_SYS_SPL_MENU
+	mini_spl_menu();
+#endif
+
 	u16 board_hw_id;
 	board_hw_id = board_hw_id_fuse_read();
 	laird_ram_ic_t ram_ic;
