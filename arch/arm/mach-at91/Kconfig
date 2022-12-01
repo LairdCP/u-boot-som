@@ -318,6 +318,9 @@ config TARGET_WB50N
 	select SAMA5D3
 	select SUPPORT_SPL
 	select BOARD_EARLY_INIT_F
+	select AT91_FUSE
+	select MISC
+	select NVMEM
 
 config TARGET_WB50N_SYSD
 	bool "Support Laird Connectivity WB50N SYSD"
@@ -325,6 +328,12 @@ config TARGET_WB50N_SYSD
 	select SAMA5D3
 	select SUPPORT_SPL
 	select BOARD_EARLY_INIT_F
+	select AT91_FUSE
+	select MISC
+	select SPL_MISC
+	select SPL_DRIVERS_MISC
+	select NVMEM
+	select SPL_NVMEM
 
 config TARGET_SOM60
 	bool "Support Laird Connectivity SOM60"
@@ -332,6 +341,12 @@ config TARGET_SOM60
 	select SAMA5D3
 	select SUPPORT_SPL
 	select BOARD_EARLY_INIT_F
+	select AT91_FUSE
+	select MISC
+	select SPL_MISC
+	select SPL_DRIVERS_MISC
+	select NVMEM
+	select SPL_NVMEM
 
 config TARGET_SOM60X2
 	bool "Support Laird Connectivity SOM60 x2"
@@ -339,6 +354,12 @@ config TARGET_SOM60X2
 	select SAMA5D3
 	select SUPPORT_SPL
 	select BOARD_EARLY_INIT_F
+	select AT91_FUSE
+	select MISC
+	select SPL_MISC
+	select SPL_DRIVERS_MISC
+	select NVMEM
+	select SPL_NVMEM
 
 config TARGET_IG60
 	bool "Support Laird Connectivity IG60"
@@ -346,6 +367,12 @@ config TARGET_IG60
 	select SAMA5D3
 	select SUPPORT_SPL
 	select BOARD_EARLY_INIT_F
+	select AT91_FUSE
+	select MISC
+	select SPL_MISC
+	select SPL_DRIVERS_MISC
+	select NVMEM
+	select SPL_NVMEM
 
 endchoice
 

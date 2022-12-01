@@ -946,6 +946,7 @@
 				u-boot,dm-pre-reloc;
 
 				main_rc_osc: main_rc_osc {
+					u-boot,dm-pre-reloc;
 					compatible = "atmel,at91sam9x5-clk-main-rc-osc";
 					#clock-cells = <0>;
 					interrupt-parent = <&pmc>;
@@ -1292,6 +1293,7 @@
 					};
 
 					fuse_clk: fuse_clk@48 {
+						u-boot,dm-pre-reloc;
 						#clock-cells = <0>;
 						reg = <48>;
 					};
