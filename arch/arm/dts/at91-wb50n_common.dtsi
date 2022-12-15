@@ -53,6 +53,19 @@
 				/* For nvmem subnodes */
 				#address-cells = <1>;
 				#size-cells = <1>;
+
+				nvmem-cells = <&board_hw_id>, <&eth_mac1>;
+				nvmem-cell-names = "hw-id", "mac-address1";
+
+				board_hw_id: hw-id@0 {
+					u-boot,dm-pre-reloc;
+					reg = <0x00 2>;
+				};
+
+				eth_mac1: mac-address@8 {
+					u-boot,dm-pre-reloc;
+					reg = <0x08 6>;
+				};
 			};
 		};
 	};
@@ -78,23 +91,6 @@
 		reg = <0>;
 		bus-width = <4>;
 		cd-gpios = <&pioC 26 GPIO_ACTIVE_LOW>;
-	};
-};
-
-&at91_fuse {
-	u-boot,dm-pre-reloc;
-	status = "okay";
-	nvmem-cells = <&board_hw_id>, <&eth_mac1>;
-	nvmem-cell-names = "hw-id", "mac-address1";
-
-	board_hw_id: hw-id@0 {
-		u-boot,dm-pre-reloc;
-		reg = <0x00 2>;
-	};
-
-	eth_mac1: mac-address@8 {
-		u-boot,dm-pre-reloc;
-		reg = <0x08 6>;
 	};
 };
 
