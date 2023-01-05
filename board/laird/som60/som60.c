@@ -892,10 +892,10 @@ void mem_init(void)
 
 	if (board_hw_id > MAX_BOARD_HW_ID)
 	{
-		board_hw_id = MAX_BOARD_HW_ID;
 		printf("Board HW id 0x%x exceeds maximum known ID of "
 				"0x%x, using SOM_LEGACY_RAM_IC\n",
 				board_hw_id, MAX_BOARD_HW_ID);
+		board_hw_id = MAX_BOARD_HW_ID;
 	}
 
 	ram_ic = board_hw_description[board_hw_id].ram_ic;
