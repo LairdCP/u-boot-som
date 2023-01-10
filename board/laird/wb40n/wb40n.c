@@ -50,15 +50,6 @@ int board_late_init(void)
 	usb_ether_init();
 #endif
 
-    return 0;
-}
-
-int board_early_init_f(void)
-{
-#ifdef CONFIG_DEBUG_UART
-	debug_uart_init();
-#endif
-
 	return 0;
 }
 

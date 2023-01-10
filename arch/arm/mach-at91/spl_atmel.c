@@ -123,6 +123,8 @@ void board_init_f(ulong dummy)
 
 	redirect_int_from_saic_to_aic();
 
+	board_early_init_f();
+
 #if CONFIG_IS_ENABLED(OF_CONTROL)
 	ret = spl_early_init();
 	if (ret) {
@@ -132,8 +134,6 @@ void board_init_f(ulong dummy)
 #endif
 
 	timer_init();
-
-	board_early_init_f();
 
 	preloader_console_init();
 
