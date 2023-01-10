@@ -517,11 +517,6 @@ void board_debug_uart_init(void)
 }
 #endif
 
-int board_early_init_f(void)
-{
-    return 0;
-}
-
 #ifndef CONFIG_SPL_BUILD
 
 #ifdef CONFIG_FIT_SIGNATURE
@@ -645,6 +640,20 @@ int dram_init(void)
 }
 
 #else /* SPL */
+
+int board_early_init_f(void)
+{
+	struct at91_port *at91_port = (struct at91_port *)ATMEL_BASE_PIOE;
+
+	/* pins that could be used as USART3 & USART4 are switched to GPIO here,
+	   so allow these USARTs to operate as debug terminal if so configured */
+	u32 mask = 0x079fffff ^ (readl(&at91_port->mux.pio3.abcdsr1) & 0x060c0000);
+
+	writel(mask, &at91_port->idr);
+	writel(mask, &at91_port->per);
+
+	return 0;
+}
 
 void at91_disable_smd_clock(void)
 {
