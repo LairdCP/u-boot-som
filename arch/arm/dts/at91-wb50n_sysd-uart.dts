@@ -7,8 +7,5 @@
  */
 
 /dts-v1/;
-#include "at91-wb50n_sysd.dtsi"
 
-&dbgu {
-	status = "okay";
-};
+#include "at91-wb50n_sysd.dtsi"

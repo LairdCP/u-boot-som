@@ -7,6 +7,7 @@
  */
 
 /dts-v1/;
+
 #include "at91-wb50n_sysd.dtsi"
 
 &mmc0 {
@@ -26,10 +27,6 @@
 			reg = <1>;
 		};
 	};
-};
-
-&dbgu {
-	status = "okay";
 };
 
 &usb0 {
