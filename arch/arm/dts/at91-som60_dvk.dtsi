@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * at91-som60x2.dts - Device Tree file for the DVK SOM60 x2 board
+ * at91-som60_dvk.dtsi - Device Tree file for the DVK SOM60 board
  *
  *  Copyright (C) 2018-2020 Laird Connectivity,
  *		  2018 Ben Whitten <ben.whitten@lairdconnect.com>
  *		  2018 Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
- *
- * Licensed under GPLv2 or later.
  */
 
 / {
@@ -27,7 +26,6 @@
 		apb {
 			pinctrl@fffff200 {
 				board {
-					u-boot,dm-pre-reloc;
 					pinctrl_mmc0_cd: mmc0_cd {
 						u-boot,dm-pre-reloc;
 						atmel,pins =
@@ -41,7 +39,6 @@
 					};
 
 					pinctrl_usba_vbus: usba_vbus {
-						u-boot,dm-pre-reloc;
 						atmel,pins =
 							<AT91_PIOC 14 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>;
 					};
@@ -63,17 +60,6 @@
 		reg = <0>;
 		bus-width = <4>;
 		cd-gpios = <&pioE 31 GPIO_ACTIVE_LOW>;
-	};
-};
-
-&i2c0 {
-	status = "okay";
-	clock-frequency = <400000>;
-
-	eeprom@57 {
-		compatible = "atmel,24c32";
-		reg = <0x57>;
-		pagesize = <32>;
 	};
 };
 
@@ -106,11 +92,6 @@
 			reg = <1>;
 		};
 	};
-};
-
-&dbgu {
-	u-boot,dm-pre-reloc;
-	status = "okay";
 };
 
 &usb0 {

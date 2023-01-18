@@ -296,6 +296,7 @@ void set_mac_address(const char *string)
 	}
 }
 
+#if CONFIG_IS_ENABLED(CMD_MAC_FUSE)
 int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	char cmd;
@@ -329,3 +330,4 @@ int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 
 	return 0;
 }
+#endif
