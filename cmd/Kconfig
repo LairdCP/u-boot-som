@@ -1071,12 +1071,6 @@ config CMD_FUSE
 	  which control the behaviour of the device. The command uses the
 	  fuse_...() API.
 
-config CMD_MAC_FUSE
-	bool "mac_fuse - MAC programming in fuses"
-	help
-	  This allows programming fuse fields such as MAC addresses with
-	  built-in knowledge of the fuse layout.
-
 config CMD_GPIO
 	bool "gpio"
 	help

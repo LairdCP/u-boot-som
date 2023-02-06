@@ -18,7 +18,6 @@
 #include <asm/arch/clk.h>
 
 #include <spl_menu.h>
-#include <som60_fuse.h>
 
 #include <asm/arch/sama5d3_smc.h>
 #include <asm/arch/atmel_mpddrc.h>
@@ -624,7 +623,7 @@ void board_quiesce_devices(void)
 int dram_init(void)
 {
 	u16 board_hw_id;
-	board_hw_id = board_hw_id_fuse_read();
+	board_hw_id = 0;
 	laird_ram_ic_t ram_ic;
 	const laird_ram_config_t* ram_config;
 
@@ -893,7 +892,7 @@ void mem_init(void)
 #endif
 
 	u16 board_hw_id;
-	board_hw_id = board_hw_id_fuse_read();
+	board_hw_id = 0;
 	laird_ram_ic_t ram_ic;
 	const laird_ram_config_t* ram_config;
 

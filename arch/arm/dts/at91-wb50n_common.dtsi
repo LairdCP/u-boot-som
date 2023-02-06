@@ -48,29 +48,6 @@
 				u-boot,dm-pre-reloc;
 				status = "okay";
 			};
-
-			at91_fuse: misc@ffffe400 {
-				u-boot,dm-pre-reloc;
-				compatible = "atmel,sama5d3-fuse", "simple-bus";
-				reg = <0xffffe400 0x200>;
-				clocks = <&main_rc_osc>, <&fuse_clk>;
-				/* For nvmem subnodes */
-				#address-cells = <1>;
-				#size-cells = <1>;
-
-				nvmem-cells = <&board_hw_id>, <&eth_mac1>;
-				nvmem-cell-names = "hw-id", "mac-address1";
-
-				board_hw_id: hw-id@0 {
-					u-boot,dm-pre-reloc;
-					reg = <0x00 2>;
-				};
-
-				eth_mac1: mac-address@8 {
-					u-boot,dm-pre-reloc;
-					reg = <0x08 6>;
-				};
-			};
 		};
 	};
 };
@@ -100,8 +77,6 @@
 
 &macb1 {
 	phy-mode = "rmii";
-	nvmem-cells = <&eth_mac1>;
-	nvmem-cell-names = "mac-address";
 };
 
 &dbgu {
