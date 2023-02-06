@@ -75,18 +75,6 @@ config ATSHA204A
 	   CryptoAuthentication module found for example on the Turris Omnia
 	   board.
 
-config AT91_FUSE
-	bool "Microchip/Atmel AT91 fuse support"
-	select MISC
-	select SPL_MISC if SPL
-	select SPL_DRIVERS_MISC if SPL
-	select NVMEM
-	select SPL_NVMEM if SPL
-	depends on SAMA5D3
-	default y
-	help
-	  Enable access for the fuse block found in Microchip/Atmel SoCs.
-
 config GATEWORKS_SC
 	bool "Gateworks System Controller Support"
 	depends on MISC
