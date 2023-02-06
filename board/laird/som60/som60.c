@@ -569,12 +569,10 @@ int board_late_init(void)
 	if (save)
 		env_set("version", PLAIN_VERSION);
 
-#ifndef CONFIG_TARGET_IG60
 	if ((gd->flags & GD_FLG_ENV_DEFAULT) || save) {
 		puts("Saving default environment...\n");
 		env_save();
 	}
-#endif
 
 #ifdef CONFIG_USB_ETHER
 	usb_ether_init();

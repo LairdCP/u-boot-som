@@ -1,15 +1,14 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Configuration settings for the SOM60, WB50 Modules.
- *
- * SPDX-License-Identifier: GPL-2.0+
+ * Configuration settings for the SOM60, WB50n Modules.
  */
 
 #ifndef __SOM6050_CONFIG_H
 #define __SOM6050_CONFIG_H
 
 #include <linux/sizes.h>
-
 #include <asm/arch/sama5d3.h>
+#include <version.h>
 
 /* ARM asynchronous clock */
 #define CONFIG_SYS_AT91_SLOW_CLOCK      32768
@@ -56,7 +55,7 @@
 	"autoload=no\0" \
 	"autostart=no\0" \
 	"cdc_connect_timeout=15\0" \
-	"bootside=a\0"
+	"version=" PLAIN_VERSION "\0"
 
 #ifndef __ASSEMBLY__
 /* Define hook for custom board initialization */

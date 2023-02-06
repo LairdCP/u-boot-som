@@ -38,7 +38,6 @@ CONFIG_SPL_FIT_SOURCE="board/laird/som60/fit_spl.its"
 # CONFIG_USE_SPL_FIT_GENERATOR is not set
 CONFIG_NAND_BOOT=y
 CONFIG_BOOTDELAY=-2
-CONFIG_USE_BOOTARGS=y
 CONFIG_USE_BOOTCOMMAND=y
 CONFIG_BOOTCOMMAND="ubi part ubi; run _setbootvol; ubi read 0x21000000 kernel_${bootside}; source 0x21000000:script; while true; do bootm; done"
 # CONFIG_DISPLAY_CPUINFO is not set
