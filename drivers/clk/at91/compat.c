@@ -234,64 +234,6 @@ U_BOOT_DRIVER(at91sam9x5_main_osc_clk) = {
 	.ops = &main_osc_clk_ops,
 };
 
-/* Main rc osc clock specific code. */
-static int main_rc_osc_clk_enable(struct clk *clk)
-{
-	struct pmc_plat *plat = dev_get_plat(clk->dev);
-	struct at91_pmc *pmc = plat->reg_base;
-
-	u32 val = readl(&pmc->mor);
-	val &= ~AT91_PMC_MOR_KEY(0xff);
-	val |= AT91_PMC_MOR_MOSCRCEN | AT91_PMC_MOR_KEY(0x37);
-	writel(val, &pmc->mor);
-
-	// Wait for Main RC oscillator stabilization
-	do udelay(100000); while ((readl(&pmc->sr) & AT91_PMC_MOSCRCS) == 0);
-	return 0;
-}
-
-static int main_rc_osc_clk_disable(struct clk *clk)
-{
-	struct pmc_plat *plat = dev_get_plat(clk->dev);
-	struct at91_pmc *pmc = plat->reg_base;
-
-	u32 val = readl(&pmc->mor);
-	val &= ~AT91_PMC_MOR_KEY(0xff);
-	val = (val & ~AT91_PMC_MOR_MOSCRCEN) | AT91_PMC_MOR_KEY(0x37);
-	writel(val, &pmc->mor);
-	return 0;
-}
-
-static ulong main_rc_osc_clk_get_rate(struct clk *clk)
-{
-	return 12000000UL;
-}
-
-static struct clk_ops main_rc_osc_clk_ops = {
-	.enable = main_rc_osc_clk_enable,
-	.disable = main_rc_osc_clk_disable,
-	.get_rate = main_rc_osc_clk_get_rate,
-};
-
-static int main_rc_osc_clk_probe(struct udevice *dev)
-{
-	return at91_pmc_core_probe(dev);
-}
-
-static const struct udevice_id main_rc_osc_clk_match[] = {
-	{ .compatible = "atmel,at91sam9x5-clk-main-rc-osc" },
-	{}
-};
-
-U_BOOT_DRIVER(at91sam9x5_main_rc_osc_clk) = {
-	.name = "at91sam9x5-main-rc-osc-clk",
-	.id = UCLASS_CLK,
-	.of_match = main_rc_osc_clk_match,
-	.probe = main_rc_osc_clk_probe,
-	.plat_auto	= sizeof(struct pmc_plat),
-	.ops = &main_rc_osc_clk_ops,
-};
-
 /* PLLA clock specific code. */
 static int plla_clk_enable(struct clk *clk)
 {
