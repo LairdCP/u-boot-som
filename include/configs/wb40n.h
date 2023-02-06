@@ -8,8 +8,8 @@
 #define __CONFIG_H__
 
 #include <linux/sizes.h>
-
 #include <asm/hardware.h>
+#include <version.h>
 
 /* ARM asynchronous clock */
 #define CONFIG_SYS_AT91_SLOW_CLOCK      32768
@@ -44,6 +44,7 @@
 	"autoload=no\0" \
 	"autostart=no\0" \
 	"cdc_connect_timeout=15\0" \
+	"version=" PLAIN_VERSION "\0" \
 	"ethaddr=c0:ee:40:00:00:00\0"
 
 #endif

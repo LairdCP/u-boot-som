@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Configuration settings for the WB50 Module.
- *
- * SPDX-License-Identifier: GPL-2.0+
+ * Configuration settings for the WB50n Module.
  */
 #ifndef __WB50_CONFIG_H
 #define __WB50_CONFIG_H

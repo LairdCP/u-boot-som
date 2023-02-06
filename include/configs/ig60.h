@@ -18,15 +18,5 @@
 	"else " \
 		"setenv bootvol 4;" \
 	"fi\0" \
-	"_formatubi=nand erase.part ubi;" \
-		"ubi part ubi;" \
-		"for part in a b; do " \
-			"ubi create kernel_${part} 800000 dynamic;" \
-			"ubi create rootfs_${part} 5200000 dynamic;" \
-			"ubi create rootfs_data_${part} 1E00000 dynamic;" \
-		"done;" \
-		"ubi create rodata 800000 dynamic;" \
-		"ubi create ig 8e00000 dynamic;" \
-		"ubi create perm 1800000 dynamic\0"
 
 #endif
