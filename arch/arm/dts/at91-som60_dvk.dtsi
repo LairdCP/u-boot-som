@@ -81,3 +81,21 @@
 
 	status = "okay";
 };
+
+&i2c0 {
+	status = "okay";
+
+	eeprom@57 {
+		u-boot,dm-pre-reloc;
+		compatible = "atmel,24c32";
+		reg = <0x57>;
+		pagesize = <32>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		eth0_addr: eth-mac-addr@0 {
+			reg = <0x0 0x06>;
+		};
+	};
+};

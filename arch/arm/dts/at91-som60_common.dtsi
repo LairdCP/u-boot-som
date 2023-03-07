@@ -69,10 +69,14 @@
 
 &macb0 {
 	phy-mode = "rgmii-id";
+	nvmem-cells = <&eth_mac0>;
+	nvmem-cell-names = "mac-address";
 };
 
 &macb1 {
 	phy-mode = "rmii";
+	nvmem-cells = <&eth_mac1>;
+	nvmem-cell-names = "mac-address";
 };
 
 &dbgu {
@@ -95,4 +99,47 @@
 	 */
 	nand-on-flash-bbt;
 	status = "okay";
+};
+
+&twi0_clk {
+	u-boot,dm-pre-reloc;
+};
+
+&pinctrl_i2c0 {
+	u-boot,dm-pre-reloc;
+	atmel,pins =
+		<AT91_PIOA 30 AT91_PERIPH_A AT91_PINCTRL_PULL_UP	/* PA30 periph A TWD0 pin, conflicts with URXD1, ISI_VSYNC */
+		 AT91_PIOA 31 AT91_PERIPH_A AT91_PINCTRL_PULL_UP>;	/* PA31 periph A TWCK0 pin, conflicts with UTXD1, ISI_HSYNC */
+};
+
+&i2c0 {
+	u-boot,dm-pre-reloc;
+	status = "okay";
+	clock-frequency = <400000>;
+	som60_eeprom: i2c_eeprom@50 {
+		u-boot,dm-pre-reloc;
+		compatible = "atmel,24c02";
+		reg = <0x50>;
+		pagesize = <1>;
+		/* For nvmem subnodes */
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		nvmem-cells = <&board_hw_id>, <&eth_mac0>, <&eth_mac1>;
+		nvmem-cell-names = "hw-id", "mac-address0", "mac-address1";
+
+		board_hw_id: hw-id@0 {
+			u-boot,dm-pre-reloc;
+			reg = <0x00 0x02>;
+		};
+
+		eth_mac1: mac-address@8 {
+			u-boot,dm-pre-reloc;
+			reg = <0x08 0x06>;
+		};
+		eth_mac0: mac-address@2 {
+			u-boot,dm-pre-reloc;
+			reg = <0x02 0x06>;
+		};
+	};
 };

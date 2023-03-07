@@ -1,6 +1,7 @@
 config SYS_SPL_MENU
 	bool "spl_menu - mini menu in SPL"
-	depends on AT91_FUSE
+	depends on SPL_NVMEM
+	depends on SPL_I2C_EEPROM
 	default false
 	help
 		This menu allows programming and verification of board HW ID and MAC addresses in manufacturing test.  This may be necessary prior to initializing RAM to run full u-boot.
