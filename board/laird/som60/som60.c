@@ -18,6 +18,7 @@
 #include <asm/arch/clk.h>
 
 #include <spl_menu.h>
+#include <som60_eeprom.h>
 
 #include <asm/arch/sama5d3_smc.h>
 #include <asm/arch/atmel_mpddrc.h>
@@ -547,6 +548,18 @@ void som60_fs_key_inject(void)
 }
 #endif
 
+static u16 board_hw_id_get(void)
+{
+	u16 hw_id;
+
+	hw_id = board_hw_id_nvmem_read();
+
+	if (hw_id > MAX_BOARD_HW_ID)
+		hw_id = 0;
+
+	return hw_id;
+}
+
 int board_late_init(void)
 {
 	char *version;
@@ -622,15 +635,10 @@ void board_quiesce_devices(void)
 
 int dram_init(void)
 {
-	u16 board_hw_id;
-	board_hw_id = 0;
 	laird_ram_ic_t ram_ic;
 	const laird_ram_config_t* ram_config;
 
-	if (board_hw_id > MAX_BOARD_HW_ID)
-		board_hw_id = MAX_BOARD_HW_ID;
-
-	ram_ic = board_hw_description[board_hw_id].ram_ic;
+	ram_ic = board_hw_description[board_hw_id_get()].ram_ic;
 	ram_config = &ram_configs[ram_ic];
 	gd->ram_size = ram_config->sdram_size;
 	return 0;
@@ -892,16 +900,15 @@ void mem_init(void)
 #endif
 
 	u16 board_hw_id;
-	board_hw_id = 0;
+	board_hw_id = board_hw_id_nvmem_read();
 	laird_ram_ic_t ram_ic;
 	const laird_ram_config_t* ram_config;
 
-	if (board_hw_id > MAX_BOARD_HW_ID)
-	{
+	if (board_hw_id > MAX_BOARD_HW_ID) {
 		printf("Board HW id 0x%x exceeds maximum known ID of "
 				"0x%x, using SOM_LEGACY_RAM_IC\n",
 				board_hw_id, MAX_BOARD_HW_ID);
-		board_hw_id = MAX_BOARD_HW_ID;
+		board_hw_id = 0;
 	}
 
 	ram_ic = board_hw_description[board_hw_id].ram_ic;
