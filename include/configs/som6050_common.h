@@ -57,6 +57,14 @@
 	"cdc_connect_timeout=15\0" \
 	"version=" PLAIN_VERSION "\0"
 
+#ifdef CONFIG_ENV_WRITEABLE_LIST
+#ifdef CONFIG_NET_CMD
+#define CONFIG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:mw,eth1addr:mw"
+#else
+#define CONFIG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:sw,eth1addr:sw"
+#endif
+#endif
+
 #ifndef __ASSEMBLY__
 /* Define hook for custom board initialization */
 void som60_custom_hw_init(void);
