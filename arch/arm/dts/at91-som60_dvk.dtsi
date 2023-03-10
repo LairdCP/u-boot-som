@@ -63,6 +63,17 @@
 	};
 };
 
+&i2c0 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+	eeprom@57 {
+		compatible = "atmel,24c32";
+		reg = <0x57>;
+		pagesize = <32>;
+	};
+};
+
 &macb0 {
 	status = "okay";
 
