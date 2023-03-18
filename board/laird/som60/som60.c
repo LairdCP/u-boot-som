@@ -30,12 +30,13 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define FS_MAX_KEY_SIZE	64
-#define FS_KEY_WINDOW	0x31e000
+#define FS_MAX_KEY_SIZE     64
+#define FS_KEY_WINDOW       0x31e000
 
-#define MAX_BOARD_HW_ID	0x00000004
+#define LEGACY_BOARD_HW_ID  0x00000000
+#define MAX_BOARD_HW_ID     0x00000004
 
-#define MAX_NUM_PORTS	2
+#define MAX_NUM_PORTS       2
 
 
 /* RAM IC's used on boards.  Note JSFBAB3YH3BBG_425 and JSFBAB3Y63GBG_425
@@ -121,9 +122,7 @@ static const laird_ram_config_t ram_configs[] = {
 				ATMEL_MPDDRC_LPR_UPD_MR_NO_UPDATE)
 		},
 	},
-#endif
-
-#if defined(CONFIG_TARGET_SOM60) || defined(CONFIG_TARGET_SOM60X2) || defined(CONFIG_TARGET_IG60)
+#else
 	[MT29C2G24MAAAAKAMD_5] = {
 		.type = RAM_TYPE_LPDDR1,
 		.name = "MT29C2G24MAAAAKAMD_5",
@@ -517,6 +516,25 @@ void board_debug_uart_init(void)
 }
 #endif
 
+#ifdef CONFIG_SYS_EEPROM_SETUP
+static int board_hw_id_get(void)
+{
+	int hw_id;
+
+	hw_id = board_hw_id_nvmem_read();
+
+	if (hw_id < 0 || hw_id > MAX_BOARD_HW_ID)
+		hw_id = LEGACY_BOARD_HW_ID;
+
+	return hw_id;
+}
+#else
+static inline int board_hw_id_get(void)
+{
+	return LEGACY_BOARD_HW_ID;
+}
+#endif
+
 #ifndef CONFIG_SPL_BUILD
 
 #ifdef CONFIG_FIT_SIGNATURE
@@ -547,18 +565,6 @@ void som60_fs_key_inject(void)
 	memcpy(key, fs_key, fs_key_len);
 }
 #endif
-
-static u16 board_hw_id_get(void)
-{
-	u16 hw_id;
-
-	hw_id = board_hw_id_nvmem_read();
-
-	if (hw_id > MAX_BOARD_HW_ID)
-		hw_id = 0;
-
-	return hw_id;
-}
 
 int board_late_init(void)
 {
@@ -895,28 +901,17 @@ void mem_init_lpddr1(const struct atmel_mpddrc_config *mpddr_value)
 
 void mem_init(void)
 {
-#if CONFIG_SYS_SPL_MENU
-	mini_spl_menu();
-#endif
-
-	u16 board_hw_id;
-	board_hw_id = board_hw_id_nvmem_read();
 	laird_ram_ic_t ram_ic;
 	const laird_ram_config_t* ram_config;
 
-	if (board_hw_id > MAX_BOARD_HW_ID) {
-		printf("Board HW id 0x%x exceeds maximum known ID of "
-				"0x%x, using SOM_LEGACY_RAM_IC\n",
-				board_hw_id, MAX_BOARD_HW_ID);
-		board_hw_id = 0;
-	}
+#ifdef CONFIG_SPL_SYS_MENU
+	mini_spl_menu();
+#endif
 
-	ram_ic = board_hw_description[board_hw_id].ram_ic;
+	ram_ic = board_hw_description[board_hw_id_get()].ram_ic;
 
 	ram_config = &ram_configs[ram_ic];
-	puts("Initializing ram module ");
-	puts(ram_config->name);
-	puts("\r\n");
+	printf("Initializing RAM module %s\n", ram_config->name);
 	if (ram_config->type == RAM_TYPE_LPDDR1)
 		mem_init_lpddr1(&ram_config->ddr_config);
 	 else

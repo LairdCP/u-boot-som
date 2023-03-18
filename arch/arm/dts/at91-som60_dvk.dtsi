@@ -94,7 +94,11 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		eth0_addr: eth-mac-addr@0 {
+		nvmem-cells = <&eth0_mac_dvk>;
+		nvmem-cell-names = "mac-address-dvk";
+
+		eth0_mac_dvk: eth-mac-addr@0 {
+			u-boot,dm-pre-reloc;
 			reg = <0x0 0x06>;
 		};
 	};

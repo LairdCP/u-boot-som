@@ -116,11 +116,13 @@
 	u-boot,dm-pre-reloc;
 	status = "okay";
 	clock-frequency = <400000>;
-	som60_eeprom: i2c_eeprom@50 {
+
+	som60_eeprom: eeprom@50 {
 		u-boot,dm-pre-reloc;
 		compatible = "atmel,24c02";
 		reg = <0x50>;
 		pagesize = <1>;
+
 		/* For nvmem subnodes */
 		#address-cells = <1>;
 		#size-cells = <1>;

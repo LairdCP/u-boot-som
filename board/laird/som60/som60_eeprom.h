@@ -9,13 +9,11 @@
 #define SOM60_EEPROM_H
 
 #include <common.h>
-#include <command.h>
 
-void set_mac_address(const char *string, bool);
-bool is_valid_ether_addr(const u8 *addr);
-void read_show_mac(bool);
-int enetaddr_nvmem_read(u8 *enetaddr, int i);
-u16 board_hw_id_nvmem_read(void);
-void board_hw_id_nvmem_write(u16 val);
+int set_mac_address(const char *buf, bool);
+int read_show_mac(bool);
+
+int board_hw_id_nvmem_read(void);
+int board_hw_id_nvmem_write(u16 val);
 
 #endif
