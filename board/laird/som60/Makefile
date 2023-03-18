@@ -4,10 +4,9 @@
 #
 
 obj-y += som60.o
-obj-y += som60_eeprom.o
-ifdef CONFIG_SYS_SPL_MENU
-obj-y += spl_menu.o
-endif
+obj-$(CONFIG_SYS_EEPROM_SETUP) += som60_eeprom.o
+obj-$(CONFIG_SPL_SYS_MENU) += spl_menu.o
+
 UBOOTINCLUDE += -Iboard/laird/som60
 
 ifndef CONFIG_SPL_BUILD
