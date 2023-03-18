@@ -32,8 +32,8 @@
 #define CONFIG_NR_DRAM_BANKS            1
 #define CONFIG_SYS_SDRAM_BASE           ATMEL_BASE_DDRCS
 
-#define CONFIG_SYS_INIT_RAM_ADDR	ATMEL_BASE_SRAM1
-#define CONFIG_SYS_INIT_RAM_SIZE	SZ_32K
+#define CONFIG_SYS_INIT_RAM_ADDR        ATMEL_BASE_SRAM1
+#define CONFIG_SYS_INIT_RAM_SIZE        SZ_32K
 
 /* NAND flash */
 #define CONFIG_SYS_MAX_NAND_DEVICE      1
@@ -46,10 +46,6 @@
 
 /* System */
 #define CONFIG_SYS_MONITOR_LEN          SZ_512K /* max u-boot size */
-
-#ifdef CONFIG_I2C_EEPROM
-#define SYS_I2C_MAC_OFFSET		0
-#endif
 
 #define DEFAULT_ENV_SETTINGS \
 	"autoload=no\0" \

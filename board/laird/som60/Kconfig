@@ -1,11 +1,3 @@
-config SYS_SPL_MENU
-	bool "spl_menu - mini menu in SPL"
-	depends on SPL_NVMEM
-	depends on SPL_I2C_EEPROM
-	default false
-	help
-		This menu allows programming and verification of board HW ID and MAC addresses in manufacturing test.  This may be necessary prior to initializing RAM to run full u-boot.
-
 if TARGET_SOM60
 
 config SYS_BOARD
@@ -70,3 +62,25 @@ config SYS_CONFIG_NAME
 	default "wb50n_sysd"
 
 endif
+
+config SYS_EEPROM_SETUP
+	bool "Run-time EEPROM based Module Configuration"
+	default y
+	depends on TARGET_SOM60 || TARGET_SOM60X2 || TARGET_IG60
+	select DM_I2C
+	select SYS_I2C_AT91
+	select I2C_EEPROM
+	select NVMEM
+	select ID_EEPROM
+	select SPL_I2C if SUPPORT_SPL
+	select SPL_I2C_EEPROM if SUPPORT_SPL
+	select SPL_NVMEM if SUPPORT_SPL
+
+config SPL_SYS_MENU
+	bool "Board configuration SPL Menu"
+	depends on SYS_EEPROM_SETUP
+	help
+		Enables programming and verification into EEPROM of
+		board HW ID and MAC addresses for manufacturing.
+		HW ID identifies DRAM type insttalled on the module
+		This is required to run prior to initializing DRAM

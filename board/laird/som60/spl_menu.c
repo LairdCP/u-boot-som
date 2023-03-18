@@ -6,23 +6,11 @@
  */
 
 #include <common.h>
-#include <init.h>
-#include <env.h>
-#include <net.h>
-#include <debug_uart.h>
-#include <watchdog.h>
+#include <asm/global_data.h>
 #include <wdt.h>
-#include <linux/delay.h>
-#include <serial.h>
-
-#include <../drivers/serial/atmel_usart.h>
+#include <linux/ctype.h>
 
 #include <som60_eeprom.h>
-
-#include <asm/arch/at91_common.h>
-#include <asm/arch/gpio.h>
-
-#include <linux/ctype.h>
 
 #define MINI_MENU_INPUT_SIZE    20
 
@@ -37,8 +25,9 @@ DECLARE_GLOBAL_DATA_PTR;
 static void spl_gets(char* chr, size_t sz)
 {
 	size_t i = 0;
+
 	for(;;) {
-		*chr = serial_getc();
+		*chr = getchar();
 		if (*chr == '\b' || (*chr == 127)) {
 			if (i == 0)
 				continue;
@@ -63,16 +52,33 @@ static void spl_gets(char* chr, size_t sz)
 	}
 
 	puts("\r\n");
-	return;
+}
+
+static void set_mac_address_menu(const char *buf, bool use_dvk)
+{
+	int ret = set_mac_address(buf, use_dvk);
+
+	switch (ret) {
+	case 0:
+		break;
+
+	case -ERANGE:
+		printf("Invalid MAC address entered\n");
+		break;
+
+	default:
+		printf("EEPROM Write Error %d\n", ret);
+		break;
+	}
 }
 
 void mini_spl_menu(void)
 {
-	u32 val;
+	int val, ret;
 	char chr;
 	char buf[MINI_MENU_INPUT_SIZE];
 
-#if defined(CONFIG_SPL_WATCHDOG) && CONFIG_IS_ENABLED(WDT)
+#if CONFIG_IS_ENABLED(WATCHDOG) && CONFIG_IS_ENABLED(WDT)
 	initr_watchdog();
 #endif
 	for(;;) {
@@ -84,31 +90,33 @@ void mini_spl_menu(void)
 		puts("4. DVK mac set\n");
 		puts("5. DVK mac read\n");
 		puts("a. continue boot\n");
-		chr = tolower(serial_getc());
+
+		chr = tolower(getchar());
+
 		switch(chr) {
 		case '0':
 			puts("hw id set\n");
-			val = board_hw_id_nvmem_read();
-			if (val != 0) {
-				puts("hw id already programmed - write prohibited\n");
-				break;
-			}
 			puts("enter hw id in hexadecimal\n");
 			spl_gets(buf, MINI_MENU_INPUT_SIZE);
 			val = simple_strtoul(buf, NULL, 16) & 0xff;
 			printf("write HW ID as 0x%x\n", val);
-			board_hw_id_nvmem_write(val);
+			ret = board_hw_id_nvmem_write(val);
+			if (ret)
+				printf("EEPROM Write Error %d\n", ret);
 			break;
 		case '1':
 			puts("hw id read\n");
-			val = board_hw_id_nvmem_read();
-			printf("hw id: 0x%x\n", val);
+			ret = board_hw_id_nvmem_read();
+			if (ret < 0)
+				printf("EEPROM Read Error %d\n", ret);
+			else
+				printf("hw id: 0x%x\n", ret);
 			break;
 		case '2':
 			puts("set mac addresses som60v2\n");
 			puts("enter mac address 1\n");
 			spl_gets(buf, MINI_MENU_INPUT_SIZE);
-			set_mac_address(buf, false);
+			set_mac_address_menu(buf, false);
 			break;
 		case '3':
 			puts("mac read\n");
@@ -118,7 +126,7 @@ void mini_spl_menu(void)
 			puts("set mac addresses DVK\n");
 			puts("enter mac address 1\n");
 			spl_gets(buf, MINI_MENU_INPUT_SIZE);
-			set_mac_address(buf, true);
+			set_mac_address_menu(buf, true);
 			break;
 		case '5':
 			puts("mac read DVK\n");
