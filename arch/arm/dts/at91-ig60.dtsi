@@ -1,5 +1,5 @@
 /*
- * at91-ig60.dts - Device Tree file for the Sentrius IG60
+ * at91-ig60.dtsi - Device Tree file for the Sentrius IG60
  *
  *  Copyright (C) 2018 Laird Connectivity,
  *		  2018 James Kalbfleisch <james.kalbfleisch@lairdconnect.com>
@@ -9,6 +9,10 @@
 
 
 / {
+	memory@20000000 {
+		reg = <0x20000000 0x10000000>;
+	};
+
 	reg_mmc0_en: reg_mmc0_en_grp {
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_mmc0_en>;

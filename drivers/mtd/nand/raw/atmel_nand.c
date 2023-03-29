@@ -14,6 +14,7 @@
 #include <log.h>
 #include <asm/gpio.h>
 #include <asm/arch/gpio.h>
+#include <asm/arch/clk.h>
 #include <dm/device_compat.h>
 #include <dm/devres.h>
 #include <linux/bitops.h>
@@ -1408,8 +1409,11 @@ static int nandflash_detect_onfi(struct nand_chip *chip)
 	struct nand_onfi_params *p = &chip->onfi_params;
 	int i, val;
 
-	nand_command(-1, -1, 0x20, NAND_CMD_READID);
+	nand_command(-1, -1, 0, NAND_CMD_READID);
+	chip->read_buf(mtd, chip->id.data, 4);
+	chip->id.len = 4;
 
+	nand_command(-1, -1, 0x20, NAND_CMD_READID);
 	chip->read_buf(mtd, onfi_ind, sizeof(onfi_ind));
 
 	if (memcmp(onfi_ind, "ONFI", 4)) {
@@ -1626,7 +1630,7 @@ int at91_nand_wait_ready(struct mtd_info *mtd)
 
 int board_nand_init(struct nand_chip *nand)
 {
-	int ret = 0;
+	int ret;
 
 	nand->ecc.mode = NAND_ECC_SOFT;
 #ifdef CONFIG_SYS_NAND_DBW_16
@@ -1669,6 +1673,16 @@ int board_nand_init(struct nand_chip *nand)
 
 void nand_init(void)
 {
+	const struct nand_data_interface *conf;
+
+	/* 1st time nand_init before zero of BSS */
+	memset(&nand_chip, 0, sizeof(nand_chip));
+
+	at91_periph_clk_enable(ATMEL_ID_SMC);
+
+	conf = nand_get_default_data_interface();
+	atmel_setup_data_interface(NULL, 1, conf);
+
 	mtd = nand_to_mtd(&nand_chip);
 
 	nand_chip.IO_ADDR_R = (void __iomem *)CONFIG_SYS_NAND_BASE;
@@ -1690,6 +1704,16 @@ void nand_deselect(void)
 {
 	if (nand_chip.select_chip)
 		nand_chip.select_chip(mtd, -1);
+}
+
+unsigned long nand_size(void)
+{
+	return (unsigned long)nand_chip.chipsize;
+}
+
+unsigned nand_jedec_id(void)
+{
+	return nand_chip.id.len ? nand_chip.id.data[0] : 0;
 }
 
 int nand_spl_load_image(uint32_t offs, unsigned int size, void *dst)
