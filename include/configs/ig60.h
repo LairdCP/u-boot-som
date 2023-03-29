@@ -8,7 +8,7 @@
 #define __IG60_CONFIG_H
 
 /* The IG60 inherits most of the SOM60 configuration */
-#include "som60x2.h"
+#include "som60.h"
 
 /* Customize IG60 settings only */
 #undef CONFIG_EXTRA_ENV_SETTINGS

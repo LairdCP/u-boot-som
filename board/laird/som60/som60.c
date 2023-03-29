@@ -12,6 +12,7 @@
 #include <net.h>
 #include <debug_uart.h>
 #include <version.h>
+#include <nand.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
@@ -36,18 +37,18 @@ DECLARE_GLOBAL_DATA_PTR;
 #define LEGACY_BOARD_HW_ID  0x00000000
 #define MAX_BOARD_HW_ID     0x00000004
 
-#define MAX_NUM_PORTS       2
+int save_env = 0;
 
-
+#ifdef CONFIG_SPL_BUILD
 /* RAM IC's used on boards.  Note JSFBAB3YH3BBG_425 and JSFBAB3Y63GBG_425
  * combo packages have the same DDR silicon internally.
  */
 typedef enum {
 	MT46H16M32LF                             = 0,  // legacy wb50n (5 & 6)
-	MT29C2G24MAAAAKAMD_5                     = 1,  // legacy som60
-	MT29C4G48MAYBBAMR_48                     = 2,  // legacy som60x2
-	DDR2_JSFBAB3YH3BBG_425_JSFBAB3Y63GBG_425 = 3,  // 2022 som60 redesign
-	DDR2_JSFCBB3YH3BBG_425A                  = 4,  // 2022 som60x2 redesign
+	DDR2_JSFBAB3YH3BBG_425_JSFBAB3Y63GBG_425 = 1,  // som60v2
+	DDR2_JSFCBB3YH3BBG_425A                  = 2,  // som60x2v2
+	MT29C2G24MAAAAKAMD_5                     = 3,  // som60
+	MT29C4G48MAYBBAMR_48                     = 4,  // som60x2
 } laird_ram_ic_t;
 
 typedef enum {
@@ -56,49 +57,19 @@ typedef enum {
 } laird_ram_type;
 
 typedef struct {
-	laird_ram_ic_t ram_ic;
-} board_hw_description_t;
-
-static const board_hw_description_t board_hw_description[] = {
-	/* Legacy WB50n, SOM60, SOM60x2 */
-	[0x00000000] = {
-		/* 0 board HW ID (legacy boards) must use the type defined in the build */
-		.ram_ic = SOM_LEGACY_RAM_IC,
-	},
-	/* 2022 SOM redesign SOM60 */
-	[0x00000001] = {
-		.ram_ic = DDR2_JSFBAB3YH3BBG_425_JSFBAB3Y63GBG_425,
-	},
-	/* 2022 SOM redesign SOM60x2 */
-	[0x00000002] = {
-		.ram_ic = DDR2_JSFCBB3YH3BBG_425A,
-	},
-	/* 2022+ manufactured legacy SOM60 */
-	[0x00000003] = {
-		.ram_ic = MT29C2G24MAAAAKAMD_5,
-	},
-	/* 2022+ manufactured legacy SOM60x2 */
-	[0x00000004] = {
-		.ram_ic = MT29C4G48MAYBBAMR_48,
-	},
-};
-
-typedef struct {
-	struct atmel_mpddrc_config ddr_config;
-	laird_ram_type type;
 	const char *name;
-	long sdram_size;
+	laird_ram_type type;
+	unsigned long nand_size;
+	unsigned long sdram_size;
+	struct atmel_mpddrc_config ddr_config;
 } laird_ram_config_t;
-
-
-void mem_init_lpddr1(const struct atmel_mpddrc_config *mpddr_value);
-void mem_init_lpddr2(const struct atmel_mpddrc_config *mpddr_value);
 
 static const laird_ram_config_t ram_configs[] = {
 #if defined(CONFIG_TARGET_WB50N) || defined(CONFIG_TARGET_WB50N_SYSD)
 	[MT46H16M32LF] = {
-		.type = RAM_TYPE_LPDDR1,
 		.name = "MT46H16M32LF",
+		.type = RAM_TYPE_LPDDR1,
+		.nand_size = SZ_128M,
 		.sdram_size = SZ_64M,
 		.ddr_config =
 			{
@@ -123,62 +94,10 @@ static const laird_ram_config_t ram_configs[] = {
 		},
 	},
 #else
-	[MT29C2G24MAAAAKAMD_5] = {
-		.type = RAM_TYPE_LPDDR1,
-		.name = "MT29C2G24MAAAAKAMD_5",
-		.sdram_size = SZ_128M,
-		.ddr_config =
-			{
-			.md = (ATMEL_MPDDRC_MD_DBW_32_BITS |
-			       ATMEL_MPDDRC_MD_LPDDR_SDRAM),
-			.cr = LPDDR_CR,
-			/*
-			 * The SDRAM device requires a refresh of all rows at least every 64ms.
-			 * ((64ms) / 8192) * 132MHz = 1031 i.e. 0x407
-			 */
-			.rtr = 0x407,
-			.tpr0 = LPDDR_TPR0,
-			.tpr1 = LPDDR_TPR1,
-			.tpr2 = (4 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET),
-			.lpr = (ATMEL_MPDDRC_LPR_LPCB_DISABLED       |
-				ATMEL_MPDDRC_LPR_CLK_FR              |
-				ATMEL_MPDDRC_LPR_PASR_(0)            |
-				ATMEL_MPDDRC_LPR_DS_(1)              |
-				ATMEL_MPDDRC_LPR_TIMEOUT_0           |
-				ATMEL_MPDDRC_LPR_ADPE_FAST           |
-				ATMEL_MPDDRC_LPR_UPD_MR_NO_UPDATE)
-		},
-	},
-
-	[MT29C4G48MAYBBAMR_48] = {
-		.type = RAM_TYPE_LPDDR1,
-		.name = "MT29C4G48MAYBBAMR_48",
-		.sdram_size = SZ_256M,
-		.ddr_config = {
-			.md = (ATMEL_MPDDRC_MD_DBW_32_BITS |
-			       ATMEL_MPDDRC_MD_LPDDR_SDRAM),
-			.cr = LPDDR_CR_SOM60X2,
-			/*
-			 * The SDRAM device requires a refresh of all rows at least every 64ms.
-			 * ((64ms) / 8192) * 132MHz = 1031 i.e. 0x407
-			 */
-			.rtr = 0x407,
-			.tpr0 = LPDDR_TPR0,
-			.tpr1 = LPDDR_TPR1,
-			.tpr2 = (4 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET),
-			.lpr = (ATMEL_MPDDRC_LPR_LPCB_DISABLED       |
-				ATMEL_MPDDRC_LPR_CLK_FR              |
-				ATMEL_MPDDRC_LPR_PASR_(0)            |
-				ATMEL_MPDDRC_LPR_DS_(1)              |
-				ATMEL_MPDDRC_LPR_TIMEOUT_0           |
-				ATMEL_MPDDRC_LPR_ADPE_FAST           |
-				ATMEL_MPDDRC_LPR_UPD_MR_NO_UPDATE)
-		},
-	},
-
 	[DDR2_JSFBAB3YH3BBG_425_JSFBAB3Y63GBG_425] = {
-		.type = RAM_TYPE_LPDDR2,
 		.name = "DDR2_JSFBAB3Y[H3B/63G]BG_425",
+		.type = RAM_TYPE_LPDDR2,
+		.nand_size = SZ_256M,
 		.sdram_size = SZ_128M,
 		.ddr_config = {
 			/* Reference at91bootstrap3/driver/ddramc.c */
@@ -219,8 +138,9 @@ static const laird_ram_config_t ram_configs[] = {
 	},
 
 	[DDR2_JSFCBB3YH3BBG_425A] = {
-		.type = RAM_TYPE_LPDDR2,
 		.name = "DDR2_JSFCBB3YH3BBG_425A",
+		.type = RAM_TYPE_LPDDR2,
+		.nand_size = SZ_512M,
 		.sdram_size = SZ_256M,
 		.ddr_config = {
 			.md = (ATMEL_MPDDRC_MD_DBW_32_BITS |
@@ -243,8 +163,65 @@ static const laird_ram_config_t ram_configs[] = {
 				ATMEL_MPDDRC_LPR_UPD_MR_NO_UPDATE)
 		},
 	},
+
+	[MT29C2G24MAAAAKAMD_5] = {
+		.name = "MT29C2G24MAAAAKAMD_5",
+		.type = RAM_TYPE_LPDDR1,
+		.nand_size = SZ_256M,
+		.sdram_size = SZ_128M,
+		.ddr_config =
+			{
+			.md = (ATMEL_MPDDRC_MD_DBW_32_BITS |
+			       ATMEL_MPDDRC_MD_LPDDR_SDRAM),
+			.cr = LPDDR_CR,
+			/*
+			 * The SDRAM device requires a refresh of all rows at least every 64ms.
+			 * ((64ms) / 8192) * 132MHz = 1031 i.e. 0x407
+			 */
+			.rtr = 0x407,
+			.tpr0 = LPDDR_TPR0,
+			.tpr1 = LPDDR_TPR1,
+			.tpr2 = (4 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET),
+			.lpr = (ATMEL_MPDDRC_LPR_LPCB_DISABLED       |
+				ATMEL_MPDDRC_LPR_CLK_FR              |
+				ATMEL_MPDDRC_LPR_PASR_(0)            |
+				ATMEL_MPDDRC_LPR_DS_(1)              |
+				ATMEL_MPDDRC_LPR_TIMEOUT_0           |
+				ATMEL_MPDDRC_LPR_ADPE_FAST           |
+				ATMEL_MPDDRC_LPR_UPD_MR_NO_UPDATE)
+		},
+	},
+
+	[MT29C4G48MAYBBAMR_48] = {
+		.name = "MT29C4G48MAYBBAMR_48",
+		.type = RAM_TYPE_LPDDR1,
+		.nand_size = SZ_512M,
+		.sdram_size = SZ_256M,
+		.ddr_config = {
+			.md = (ATMEL_MPDDRC_MD_DBW_32_BITS |
+			       ATMEL_MPDDRC_MD_LPDDR_SDRAM),
+			.cr = LPDDR_CR_SOM60X2,
+			/*
+			 * The SDRAM device requires a refresh of all rows at least every 64ms.
+			 * ((64ms) / 8192) * 132MHz = 1031 i.e. 0x407
+			 */
+			.rtr = 0x407,
+			.tpr0 = LPDDR_TPR0,
+			.tpr1 = LPDDR_TPR1,
+			.tpr2 = (4 << ATMEL_MPDDRC_TPR2_TRTP_OFFSET),
+			.lpr = (ATMEL_MPDDRC_LPR_LPCB_DISABLED       |
+				ATMEL_MPDDRC_LPR_CLK_FR              |
+				ATMEL_MPDDRC_LPR_PASR_(0)            |
+				ATMEL_MPDDRC_LPR_DS_(1)              |
+				ATMEL_MPDDRC_LPR_TIMEOUT_0           |
+				ATMEL_MPDDRC_LPR_ADPE_FAST           |
+				ATMEL_MPDDRC_LPR_UPD_MR_NO_UPDATE)
+		},
+	},
+
 #endif
 };
+#endif
 
 static unsigned atmel_encode_ncycles(unsigned int ncycles,
 				     unsigned int msbpos,
@@ -516,25 +493,6 @@ void board_debug_uart_init(void)
 }
 #endif
 
-#ifdef CONFIG_SYS_EEPROM_SETUP
-static int board_hw_id_get(void)
-{
-	int hw_id;
-
-	hw_id = board_hw_id_nvmem_read();
-
-	if (hw_id < 0 || hw_id > MAX_BOARD_HW_ID)
-		hw_id = LEGACY_BOARD_HW_ID;
-
-	return hw_id;
-}
-#else
-static inline int board_hw_id_get(void)
-{
-	return LEGACY_BOARD_HW_ID;
-}
-#endif
-
 #ifndef CONFIG_SPL_BUILD
 
 #ifdef CONFIG_FIT_SIGNATURE
@@ -569,7 +527,7 @@ void som60_fs_key_inject(void)
 int board_late_init(void)
 {
 	char *version;
-	int save;
+	int need_version;
 
 #ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 	char name[32], *p;
@@ -583,12 +541,17 @@ int board_late_init(void)
 #endif
 
 	version = env_get("version");
-	save = !version || strcmp(version, PLAIN_VERSION);
-	if (save)
+	need_version = !version || strcmp(version, PLAIN_VERSION);
+	if (need_version) {
 		env_set("version", PLAIN_VERSION);
+		save_env = 1;
+	}
 
-	if ((gd->flags & GD_FLG_ENV_DEFAULT) || save) {
+	if ((gd->flags & GD_FLG_ENV_DEFAULT) || save_env) {
 		puts("Saving default environment...\n");
+		/* Save default environment twice to populate both
+		   primary and redundant environment blocks */
+		env_save();
 		env_save();
 	}
 
@@ -641,16 +604,32 @@ void board_quiesce_devices(void)
 
 int dram_init(void)
 {
-	laird_ram_ic_t ram_ic;
-	const laird_ram_config_t* ram_config;
+	gd->ram_size = get_ram_size((void *)CONFIG_SYS_SDRAM_BASE,
+		CONFIG_SYS_SDRAM_SIZE);
 
-	ram_ic = board_hw_description[board_hw_id_get()].ram_ic;
-	ram_config = &ram_configs[ram_ic];
-	gd->ram_size = ram_config->sdram_size;
 	return 0;
 }
 
 #else /* SPL */
+
+unsigned nand_jedec_id(void);
+
+static int board_hw_id(void)
+{
+#if defined(CONFIG_TARGET_WB50N) || defined(CONFIG_TARGET_WB50N_SYSD)
+	return LEGACY_BOARD_HW_ID;
+#else
+#if defined(CONFIG_SYS_EEPROM_SETUP)
+	int hw_id = board_hw_id_nvmem_read();
+
+	if (hw_id > 0 && hw_id <= MAX_BOARD_HW_ID)
+		return hw_id;
+#endif
+    return (nand_jedec_id() == NAND_MFR_MICRON ? MT29C2G24MAAAAKAMD_5 :
+		DDR2_JSFBAB3YH3BBG_425_JSFBAB3Y63GBG_425) +
+		(nand_size() == SZ_512M);
+#endif
+}
 
 int board_early_init_f(void)
 {
@@ -776,15 +755,6 @@ void spl_board_init(void)
 	at91_set_pio_output(AT91_PIO_PORTE, 3, 0);
 #endif
 	at91_set_pio_output(AT91_PIO_PORTE, 5, 0);
-
-#ifdef CONFIG_NAND_BOOT
-	const struct nand_data_interface *conf;
-
-	at91_periph_clk_enable(ATMEL_ID_SMC);
-
-	conf = nand_get_default_data_interface();
-	atmel_setup_data_interface(NULL, 1, conf);
-#endif
 }
 
 #ifdef CONFIG_SPL_LOAD_FIT
@@ -901,16 +871,15 @@ void mem_init_lpddr1(const struct atmel_mpddrc_config *mpddr_value)
 
 void mem_init(void)
 {
-	laird_ram_ic_t ram_ic;
 	const laird_ram_config_t* ram_config;
+
+	nand_init();
 
 #ifdef CONFIG_SPL_SYS_MENU
 	mini_spl_menu();
 #endif
 
-	ram_ic = board_hw_description[board_hw_id_get()].ram_ic;
-
-	ram_config = &ram_configs[ram_ic];
+	ram_config = &ram_configs[board_hw_id()];
 	printf("Initializing RAM module %s\n", ram_config->name);
 	if (ram_config->type == RAM_TYPE_LPDDR1)
 		mem_init_lpddr1(&ram_config->ddr_config);
