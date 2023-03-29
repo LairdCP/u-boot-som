@@ -12,6 +12,8 @@
 #include <nvmem.h>
 #include <net.h>
 
+extern int save_env;
+
 static int nvmem_cell_rw(const char *name, bool use_dvk, bool write, void *p, size_t size)
 {
 	const char *device = use_dvk ? "eeprom@57" : "eeprom@50";
@@ -242,7 +244,8 @@ int mac_read_from_eeprom(void)
 	eth_env_set_mac("ethaddr",  mac0);
 	eth_env_set_mac("eth1addr", mac1);
 
-	printf("  Saving... %d\n", env_save());
+	save_env = 1;
+	puts("MACs set\n");
 
 	return 0;
 }

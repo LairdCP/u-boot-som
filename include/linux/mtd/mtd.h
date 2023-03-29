@@ -330,6 +330,8 @@ struct mtd_info {
 	 * MTD device can itself be a partition).
 	 */
 	struct list_head partitions;
+
+	uint32_t reserved_size;
 };
 
 #if IS_ENABLED(CONFIG_DM)

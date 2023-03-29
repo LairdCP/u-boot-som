@@ -7,8 +7,6 @@
 
 #include "som6050_common.h"
 
-#define SOM_LEGACY_RAM_IC               MT46H16M32LF
-
 #define LPDDR_CR \
 	(ATMEL_MPDDRC_CR_NC_COL_9          |\
 	 ATMEL_MPDDRC_CR_NR_ROW_13         |\
@@ -33,5 +31,7 @@
 	16 << ATMEL_MPDDRC_TPR1_TXSRD_OFFSET |\
 	16 << ATMEL_MPDDRC_TPR1_TXSNR_OFFSET |\
 	10 << ATMEL_MPDDRC_TPR1_TRFC_OFFSET)
+
+#define CONFIG_SYS_SDRAM_SIZE SZ_64M
 
 #endif

@@ -236,7 +236,7 @@ int mtd_parse_partitions(struct mtd_info *parent, const char **_mtdparts,
 			return ret;
 
 		if (parts[idx].size == MTD_SIZE_REMAINING)
-			parts[idx].size = parent->size - cur_sz;
+			parts[idx].size = parent->size - cur_sz - parent->reserved_size;
 		cur_sz += parts[idx].size;
 
 		sz = parts[idx].size;
@@ -686,7 +686,7 @@ static struct mtd_info *allocate_partition(struct mtd_info *master,
 		}
 	}
 	if (slave->size == MTDPART_SIZ_FULL)
-		slave->size = master->size - slave->offset;
+		slave->size = master->size - slave->offset - master->reserved_size;
 
 	debug("0x%012llx-0x%012llx : \"%s\"\n", (unsigned long long)slave->offset,
 		(unsigned long long)(slave->offset + slave->size), slave->name);
@@ -780,7 +780,7 @@ int mtd_add_partition(struct mtd_info *master, const char *name,
 		return -EINVAL;
 
 	if (length == MTDPART_SIZ_FULL)
-		length = master->size - offset;
+		length = master->size - offset - master->reserved_size;
 
 	if (length <= 0)
 		return -EINVAL;

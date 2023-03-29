@@ -11,19 +11,6 @@ config SYS_CONFIG_NAME
 
 endif
 
-if TARGET_SOM60X2
-
-config SYS_BOARD
-	default "som60"
-
-config SYS_VENDOR
-	default "laird"
-
-config SYS_CONFIG_NAME
-	default "som60x2"
-
-endif
-
 if TARGET_IG60
 
 config SYS_BOARD
@@ -66,7 +53,7 @@ endif
 config SYS_EEPROM_SETUP
 	bool "Run-time EEPROM based Module Configuration"
 	default y
-	depends on TARGET_SOM60 || TARGET_SOM60X2 || TARGET_IG60
+	depends on TARGET_SOM60 || TARGET_IG60
 	select DM_I2C
 	select SYS_I2C_AT91
 	select I2C_EEPROM
