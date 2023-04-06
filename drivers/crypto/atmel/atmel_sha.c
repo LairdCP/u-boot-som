@@ -164,7 +164,7 @@ static void atmel_sha_update(struct sha_ctx *ctx, const void *buf, size_t size, 
 		chunk += block_size;
 		if (chunk >= chunk_sz) {
 			chunk -= chunk_sz;
-			WATCHDOG_RESET();
+			schedule();
 		}
 #endif
 	}

@@ -86,7 +86,6 @@ config TARGET_GURNARD
 	select AT91_WANTS_COMMON_PHY
 	select BOARD_LATE_INIT
 	select DM
-	select DM_ETH
 	select DM_GPIO
 	select DM_SERIAL
 	select DM_SPI
@@ -254,7 +253,6 @@ config TARGET_CORVUS
 	select AT91SAM9M10G45
 	select AT91_WANTS_COMMON_PHY
 	select DM
-	select DM_ETH
 	select DM_GPIO
 	select DM_SERIAL
 	select SUPPORT_SPL
@@ -272,7 +270,6 @@ config TARGET_TAURUS
 	select AT91SAM9G20
 	select AT91_WANTS_COMMON_PHY
 	select DM
-	select DM_ETH
 	select DM_GPIO
 	select DM_SERIAL
 	select DM_SPI
@@ -285,7 +282,6 @@ config TARGET_SMARTWEB
 	select AT91SAM9260
 	select AT91_WANTS_COMMON_PHY
 	select DM
-	select DM_ETH
 	select DM_GPIO
 	select DM_SERIAL
 	select SUPPORT_SPL
