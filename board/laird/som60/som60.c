@@ -873,7 +873,9 @@ void mem_init(void)
 {
 	const laird_ram_config_t* ram_config;
 
+#ifdef CONFIG_SPL_NAND_SUPPORT
 	nand_init();
+#endif
 
 #ifdef CONFIG_SPL_SYS_MENU
 	mini_spl_menu();
