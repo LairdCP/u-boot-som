@@ -314,11 +314,13 @@ config TARGET_WB50N
 	bool "Support Laird Connectivity WB50N"
 	select BOARD_LATE_INIT
 	select SAMA5D3
+	select OF_BOARD_SETUP
 
 config TARGET_WB50N_SYSD
 	bool "Support Laird Connectivity WB50N SYSD"
 	select BOARD_LATE_INIT
 	select SAMA5D3
+	select OF_BOARD_SETUP
 	select SUPPORT_SPL
 	select SPL_MISC
 	select SPL_DRIVERS_MISC
@@ -327,6 +329,7 @@ config TARGET_SOM60
 	bool "Support Laird Connectivity SOM60"
 	select BOARD_LATE_INIT
 	select SAMA5D3
+	select OF_BOARD_SETUP
 	select SUPPORT_SPL
 	select SPL_MISC
 	select SPL_DRIVERS_MISC
@@ -335,6 +338,7 @@ config TARGET_IG60
 	bool "Support Laird Connectivity IG60"
 	select BOARD_LATE_INIT
 	select SAMA5D3
+	select OF_BOARD_SETUP
 	select SUPPORT_SPL
 	select SPL_MISC
 	select SPL_DRIVERS_MISC
