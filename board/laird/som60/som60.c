@@ -610,6 +610,33 @@ int dram_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_OF_BOARD_SETUP
+static void dts_set_mac(void *blob, const char *device, const char* envmac)
+{
+	int offset;
+	u8 mac[ETH_ALEN];
+
+	if (!eth_env_get_enetaddr(envmac,  mac))
+		return;
+
+	offset = fdt_path_offset(blob, device);
+	if (offset >= 0)
+		fdt_setprop(blob, offset, "local-mac-address", mac, ETH_ALEN);
+}
+
+int ft_board_setup(void *blob, struct bd_info *bd)
+{
+#if defined(CONFIG_TARGET_WB50N_SYSD) || defined(CONFIG_TARGET_WB50N)
+	dts_set_mac(blob, "/ahb/apb/ethernet@f802c000", "ethaddr");
+#else
+	dts_set_mac(blob, "/ahb/apb/ethernet@f0028000", "ethaddr");
+	dts_set_mac(blob, "/ahb/apb/ethernet@f802c000", "eth1addr");
+#endif
+
+	return 0;
+}
+#endif
+
 #else /* SPL */
 
 unsigned nand_jedec_id(void);
