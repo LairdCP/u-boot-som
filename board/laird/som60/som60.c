@@ -13,14 +13,12 @@
 #include <debug_uart.h>
 #include <version.h>
 #include <nand.h>
+#include <mtd_node.h>
+#include <fdt_support.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
 #include <asm/arch/clk.h>
-
-#include <spl_menu.h>
-#include <som60_eeprom.h>
-
 #include <asm/arch/sama5d3_smc.h>
 #include <asm/arch/atmel_mpddrc.h>
 #include <asm/arch/at91_sck.h>
@@ -28,6 +26,11 @@
 #include <linux/ctype.h>
 #include <linux/delay.h>
 #include <linux/mtd/rawnand.h>
+
+#include <jffs2/load_kernel.h>
+
+#include "spl_menu.h"
+#include "som60_eeprom.h"
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -626,6 +629,14 @@ static void dts_set_mac(void *blob, const char *device, const char* envmac)
 
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
+#ifdef CONFIG_FDT_FIXUP_PARTITIONS
+	static const struct node_info nodes[] = {
+		{ "atmel,sama5d3-nand-node", MTD_DEV_TYPE_NAND, },
+	};
+
+	fdt_fixup_mtdparts(blob, nodes, ARRAY_SIZE(nodes));
+#endif
+
 #if defined(CONFIG_TARGET_WB50N_SYSD) || defined(CONFIG_TARGET_WB50N)
 	dts_set_mac(blob, "/ahb/apb/ethernet@f802c000", "ethaddr");
 #else

@@ -723,7 +723,7 @@ static int mtd_device_validate(u8 type, u8 num, u64 *size)
 	if (get_mtd_info(type, num, &mtd))
 		return 1;
 
-	*size = mtd->size;
+	*size = mtd->size - mtd->reserved_size;
 
 	return 0;
 }
