@@ -330,6 +330,7 @@ config TARGET_SOM60
 	select BOARD_LATE_INIT
 	select SAMA5D3
 	select OF_BOARD_SETUP
+	select FDT_FIXUP_PARTITIONS
 	select SUPPORT_SPL
 	select SPL_MISC
 	select SPL_DRIVERS_MISC
