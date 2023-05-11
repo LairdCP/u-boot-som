@@ -4426,6 +4426,9 @@ ident_done:
 	chip->badblockbits = 8;
 	chip->erase = single_erase;
 
+	if (chip->bbt_options & NAND_BBT_USE_FLASH)
+		mtd->reserved_size = NAND_BBT_SCAN_MAXBLOCKS << chip->bbt_erase_shift;
+
 	/* Do not replace user supplied command function! */
 	if (mtd->writesize > 512 && chip->cmdfunc == nand_command)
 		chip->cmdfunc = nand_command_lp;
