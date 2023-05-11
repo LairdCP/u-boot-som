@@ -1296,7 +1296,6 @@ int nand_default_bbt(struct mtd_info *mtd)
 				this->bbt_td = &bbt_main_descr;
 				this->bbt_md = &bbt_mirror_descr;
 			}
-			mtd->reserved_size = NAND_BBT_SCAN_MAXBLOCKS << this->bbt_erase_shift;
 		}
 	} else {
 		this->bbt_td = NULL;
