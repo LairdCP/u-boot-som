@@ -11,8 +11,9 @@
 #include "som60.h"
 
 /* Customize IG60 settings only */
-#undef CONFIG_EXTRA_ENV_SETTINGS
-#define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
+#undef CFG_EXTRA_ENV_SETTINGS
+#define CFG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
+	"bootside=a\0" \
 	"_setbootvol=if test ${bootside} = a; then " \
 		"setenv bootvol 1;" \
 	"else " \
