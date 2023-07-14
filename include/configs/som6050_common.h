@@ -55,9 +55,9 @@
 
 #ifdef CONFIG_ENV_WRITEABLE_LIST
 #ifdef CONFIG_NET_CMD
-#define CONFIG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:mw,eth1addr:mw"
+#define CONFIG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:mw,eth1addr:mw,fips:dw,fips_wifi:dw"
 #else
-#define CONFIG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:sw,eth1addr:sw"
+#define CONFIG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:sw,eth1addr:sw,fips:dw,fips_wifi:dw"
 #endif
 #endif
 
