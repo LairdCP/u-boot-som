@@ -488,7 +488,7 @@ static int pmecc_correction(struct mtd_info *mtd, u32 pmecc_stat, uint8_t *buf,
 {
 	struct nand_chip *nand_chip = mtd_to_nand(mtd);
 	struct atmel_nand_host *host = nand_get_controller_data(nand_chip);
-	int i, err_nbr;
+	int i, err_nbr, max_bitflips = 0;
 	u8 *buf_pos, *ecc_pos;
 
 	for (i = 0; i < host->pmecc_sector_number; i++) {
@@ -517,15 +517,16 @@ static int pmecc_correction(struct mtd_info *mtd, u32 pmecc_stat, uint8_t *buf,
 			if (err_nbr < 0) {
 				dev_err(mtd->dev, "PMECC: Too many errors\n");
 				mtd->ecc_stats.failed++;
-				return -EBADMSG;
+				return max_bitflips;
 			}
 
+			max_bitflips = max_t(int, max_bitflips, err_nbr);
 			mtd->ecc_stats.corrected += err_nbr;
 		}
 		pmecc_stat >>= 1;
 	}
 
-	return 0;
+	return max_bitflips;
 }
 
 static int atmel_nand_pmecc_read_page(struct mtd_info *mtd,
@@ -563,8 +564,7 @@ static int atmel_nand_pmecc_read_page(struct mtd_info *mtd,
 
 	stat = pmecc_readl(host->pmecc, isr);
 	if (stat != 0)
-		if (pmecc_correction(mtd, stat, buf, &oob[eccpos[0]]) != 0)
-			return -EBADMSG;
+		return pmecc_correction(mtd, stat, buf, &oob[eccpos[0]]);
 
 	return 0;
 }
