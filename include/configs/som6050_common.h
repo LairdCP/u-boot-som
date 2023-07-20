@@ -11,8 +11,8 @@
 #include <version.h>
 
 /* ARM asynchronous clock */
-#define CONFIG_SYS_AT91_SLOW_CLOCK      32768
-#define CONFIG_SYS_AT91_MAIN_CLOCK      12000000 /* from 12 MHz crystal */
+#define CFG_SYS_AT91_SLOW_CLOCK         32768
+#define CFG_SYS_AT91_MAIN_CLOCK         12000000 /* from 12 MHz crystal */
 
 /* PCK = 528MHz, MCK = 132MHz */
 #define BOARD_PLLA_SETTINGS (\
@@ -49,9 +49,9 @@
 
 #ifdef CONFIG_ENV_WRITEABLE_LIST
 #ifdef CONFIG_NET_CMD
-#define CFG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:mw,eth1addr:mw,fips:dw,fips_wifi:dw,version:sw"
+#define CFG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:mw,eth1addr:mw,fips:dw,fips_wifi:dw"
 #else
-#define CFG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:sw,eth1addr:sw,fips:dw,fips_wifi:dw,version:sw"
+#define CFG_ENV_FLAGS_LIST_STATIC "bootside:sw,ethaddr:sw,eth1addr:sw,fips:dw,fips_wifi:dw"
 #endif
 #endif
 
