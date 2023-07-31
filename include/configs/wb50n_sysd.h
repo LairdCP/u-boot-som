@@ -7,7 +7,7 @@
 
 #include "wb50n_common.h"
 
-#define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
 	"bootside=a\0"
 
 #endif
