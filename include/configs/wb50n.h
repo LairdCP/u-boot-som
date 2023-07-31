@@ -7,7 +7,7 @@
 
 #include "wb50n_common.h"
 
-#define CONFIG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
+#define CFG_EXTRA_ENV_SETTINGS DEFAULT_ENV_SETTINGS \
 	"ethaddr=c0:ee:40:00:00:00\0"
 
 #endif
