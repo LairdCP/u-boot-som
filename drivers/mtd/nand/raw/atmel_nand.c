@@ -1425,8 +1425,6 @@ static int nandflash_detect_onfi(struct nand_chip *chip)
 
 	nand_command(-1, -1, 0, NAND_CMD_PARAM);
 
-	nand_command(-1, -1, -1, NAND_CMD_READ0);
-
 	for (i = 0; i < 3; i++) {
 		chip->read_buf(mtd, (u8*)p, sizeof(*p));
 
