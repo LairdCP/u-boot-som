@@ -58,7 +58,7 @@ int nand_erase_opts(struct mtd_info *mtd,
 	struct jffs2_unknown_node cleanmarker;
 	erase_info_t erase;
 	unsigned long erase_length, erased_length; /* in blocks */
-	int result;
+	int result = 0;
 	int percent_complete = -1;
 	const char *mtd_device = mtd->name;
 	struct mtd_oob_ops oob_opts;
@@ -198,7 +198,7 @@ show_output:
 	if (!opts->quiet)
 		printf("\n");
 
-	return 0;
+	return result;
 }
 
 #ifdef CONFIG_CMD_NAND_LOCK_UNLOCK
