@@ -70,7 +70,7 @@ typedef struct {
 static const laird_ram_config_t ram_configs[] = {
 #if defined(CONFIG_TARGET_WB50N) || defined(CONFIG_TARGET_WB50N_SYSD)
 	[MT46H16M32LF] = {
-		.name = "MT46H16M32LF",
+		.name = "W949D2DB",
 		.type = RAM_TYPE_LPDDR1,
 		.nand_size = SZ_128M,
 		.sdram_size = SZ_64M,
