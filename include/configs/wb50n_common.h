@@ -7,6 +7,7 @@
 
 #include "som6050_common.h"
 
+/* Timing and sizes for W949D2DB and MT46H16M32LF (5 & 6) */
 #define LPDDR_CR \
 	(ATMEL_MPDDRC_CR_NC_COL_9          |\
 	 ATMEL_MPDDRC_CR_NR_ROW_13         |\
