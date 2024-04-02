@@ -34,6 +34,7 @@
 #include <env.h>
 #include <watchdog.h>
 #include <malloc.h>
+#include <mapmem.h>
 #include <asm/byteorder.h>
 #include <jffs2/jffs2.h>
 #include <nand.h>
@@ -432,7 +433,7 @@ static void nand_print_and_set_info(int idx)
 	env_set_hex("nand_erasesize", mtd->erasesize);
 }
 
-static int raw_access(struct mtd_info *mtd, ulong addr, loff_t off,
+static int raw_access(struct mtd_info *mtd, void *buf, loff_t off,
 		      ulong count, int read, int no_verify)
 {
 	int ret = 0;
@@ -440,8 +441,8 @@ static int raw_access(struct mtd_info *mtd, ulong addr, loff_t off,
 	while (count--) {
 		/* Raw access */
 		mtd_oob_ops_t ops = {
-			.datbuf = (u8 *)addr,
-			.oobbuf = ((u8 *)addr) + mtd->writesize,
+			.datbuf = buf,
+			.oobbuf = buf + mtd->writesize,
 			.len = mtd->writesize,
 			.ooblen = mtd->oobsize,
 			.mode = MTD_OPS_RAW
@@ -461,7 +462,7 @@ static int raw_access(struct mtd_info *mtd, ulong addr, loff_t off,
 			break;
 		}
 
-		addr += mtd->writesize + mtd->oobsize;
+		buf += mtd->writesize + mtd->oobsize;
 		off += mtd->writesize;
 	}
 
@@ -483,21 +484,21 @@ static void adjust_size_for_badblocks(loff_t *size, loff_t offset, int dev)
 
 	/* count badblocks in NAND from offset to offset + size */
 	for (; offset < maxoffset; offset += mtd->erasesize) {
-		if (nand_block_isbad(mtd, offset)) {
+		switch (nand_block_isbad(mtd, offset)) {
+		case 0:
+			break;
+		case 2:
+			badblocks_bbt++;
+			fallthrough;
+		default:
 			badblocks++;
-			/* Blocks containing the bad block table are reported
-			 * as bad to protect the table, but actually marked
-			 * reserved.  Check for that condition so as not
-			 * to inadvertently alarm a user.
-			 */
-			if (nand_block_isreserved(mtd, offset))
-				badblocks_bbt++;
+			break;
 		}
 	}
 	/* adjust size if any bad blocks found */
 	if (badblocks) {
 		*size -= badblocks * mtd->erasesize;
-		printf("size adjusted to 0x%llx (%d BBT blocks, %d bad blocks)\n",
+		printf("size adjusted to 0x%llx (%d bbt reserved, %d bad blocks)\n",
 		       (unsigned long long)*size, badblocks_bbt, badblocks - badblocks_bbt);
 	}
 }
@@ -577,19 +578,10 @@ static int do_nand(struct cmd_tbl *cmdtp, int flag, int argc,
 	if (strcmp(cmd, "bad") == 0) {
 		printf("\nDevice %d bad blocks:\n", dev);
 		for (off = 0; off < mtd->size; off += mtd->erasesize) {
-			if (nand_block_isbad(mtd, off)) {
-				/* Laird
-				 * Blocks that are used to contain the on-flash
-				 * BBT are marked as reserved in the in-RAM table
-				 * and reported as bad in the bad block check
-				 * to protect the table.
-				 * Confirm that blocks are really bad before
-				 * reporting them as such, by checking to
-				 * see if they are actually marked as reserved.
-				 */
-				if (!nand_block_isreserved(mtd, off))
-					printf("  %08llx\n", (unsigned long long)off);
-			}
+			ret = nand_block_isbad(mtd, off);
+			if (ret)
+				printf("  0x%08llx%s\n", (unsigned long long)off,
+				       ret == 2 ? "\t (bbt reserved)" : "");
 		}
 		return 0;
 	}
@@ -693,6 +685,7 @@ static int do_nand(struct cmd_tbl *cmdtp, int flag, int argc,
 		int read;
 		int raw = 0;
 		int no_verify = 0;
+		void *buf;
 
 		if (argc < 4)
 			goto usage;
@@ -748,32 +741,32 @@ static int do_nand(struct cmd_tbl *cmdtp, int flag, int argc,
 		}
 
 		mtd = get_nand_dev_by_index(dev);
+		buf = map_sysmem(addr, maxsize);
 
 		if (!s || !strcmp(s, ".jffs2") ||
 		    !strcmp(s, ".e") || !strcmp(s, ".i")) {
 			if (read)
 				ret = nand_read_skip_bad(mtd, off, &rwsize,
-							 NULL, maxsize,
-							 (u_char *)addr);
+							 NULL, maxsize, buf);
 			else
 				ret = nand_write_skip_bad(mtd, off, &rwsize,
-							  NULL, maxsize,
-							  (u_char *)addr,
+							  NULL, maxsize, buf,
 							  WITH_WR_VERIFY);
 #ifdef CONFIG_CMD_NAND_TRIMFFS
 		} else if (!strcmp(s, ".trimffs")) {
 			if (read) {
 				printf("Unknown nand command suffix '%s'\n", s);
+				unmap_sysmem(buf);
 				return 1;
 			}
 			ret = nand_write_skip_bad(mtd, off, &rwsize, NULL,
-						maxsize, (u_char *)addr,
+						maxsize, buf,
 						WITH_DROP_FFS | WITH_WR_VERIFY);
 #endif
 		} else if (!strcmp(s, ".oob")) {
 			/* out-of-band data */
 			mtd_oob_ops_t ops = {
-				.oobbuf = (u8 *)addr,
+				.oobbuf = buf,
 				.ooblen = rwsize,
 				.mode = MTD_OPS_RAW
 			};
@@ -783,13 +776,15 @@ static int do_nand(struct cmd_tbl *cmdtp, int flag, int argc,
 			else
 				ret = mtd_write_oob(mtd, off, &ops);
 		} else if (raw) {
-			ret = raw_access(mtd, addr, off, pagecount, read,
+			ret = raw_access(mtd, buf, off, pagecount, read,
 					 no_verify);
 		} else {
 			printf("Unknown nand command suffix '%s'.\n", s);
+			unmap_sysmem(buf);
 			return 1;
 		}
 
+		unmap_sysmem(buf);
 		printf(" %zu bytes %s: %s\n", rwsize,
 		       read ? "read" : "written", ret ? "ERROR" : "OK");
 
@@ -937,8 +932,7 @@ usage:
 	return CMD_RET_USAGE;
 }
 
-#ifdef CONFIG_SYS_LONGHELP
-static char nand_help_text[] =
+U_BOOT_LONGHELP(nand,
 	"info - show available NAND devices\n"
 	"nand device [dev] - show or set current device\n"
 	"nand read - addr off|partition size\n"
@@ -983,8 +977,7 @@ static char nand_help_text[] =
 	"nand env.oob set off|partition - set enviromnent offset\n"
 	"nand env.oob get - get environment offset"
 #endif
-	"";
-#endif
+	);
 
 U_BOOT_CMD(
 	nand, CONFIG_SYS_MAXARGS, 1, do_nand,

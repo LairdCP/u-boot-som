@@ -127,6 +127,9 @@ static const struct udevice_id at91_reset_ids[] = {
 	{
 		.compatible = "microchip,sam9x60-rstc",
 	},
+	{
+		.compatible = "atmel,at91sam9g45-rstc",
+	},
 	{ }
 };
 

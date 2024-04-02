@@ -55,7 +55,7 @@
 					};
 
 					pinctrl_nand0_wp: nand0_wp {
-						u-boot,dm-pre-reloc;
+						bootph-all;
 						atmel,pins =
 							<AT91_PIOD 10 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
 					};
@@ -92,7 +92,7 @@
 };
 
 &dbgu {
-	u-boot,dm-pre-reloc;
+	bootph-all;
 };
 
 &nand0 {

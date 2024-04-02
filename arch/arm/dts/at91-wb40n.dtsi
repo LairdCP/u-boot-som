@@ -159,7 +159,7 @@
 };
 
 &dbgu {
-	u-boot,dm-pre-reloc;
+	bootph-all;
 };
 
 &nand0 {

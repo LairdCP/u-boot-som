@@ -12,6 +12,7 @@
 
 #include <common.h>
 #include <log.h>
+#include <system-constants.h>
 #include <asm/gpio.h>
 #include <asm/arch/gpio.h>
 #include <asm/arch/clk.h>
@@ -20,6 +21,7 @@
 #include <linux/bitops.h>
 #include <linux/bug.h>
 #include <linux/delay.h>
+#include <linux/printk.h>
 
 #include <malloc.h>
 #include <nand.h>
@@ -1587,7 +1589,7 @@ int spl_nand_erase_one(int block, int page)
 	if (nand_chip.select_chip)
 		nand_chip.select_chip(mtd, 0);
 
-	page_addr = page + block * CONFIG_SYS_NAND_PAGE_COUNT;
+	page_addr = page + block * SYS_NAND_BLOCK_PAGES;
 	hwctrl(mtd, NAND_CMD_ERASE1, NAND_CTRL_CLE | NAND_CTRL_CHANGE);
 	/* Row address */
 	hwctrl(mtd, (page_addr & 0xff), NAND_CTRL_ALE | NAND_CTRL_CHANGE);
@@ -1698,6 +1700,11 @@ void nand_init(void)
 
 	if (nand_chip.select_chip)
 		nand_chip.select_chip(mtd, 0);
+}
+
+unsigned int nand_page_size(void)
+{
+	return nand_to_mtd(&nand_chip)->writesize;
 }
 
 void nand_deselect(void)

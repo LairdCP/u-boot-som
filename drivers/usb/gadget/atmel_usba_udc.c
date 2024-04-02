@@ -13,6 +13,7 @@
 #include <asm/gpio.h>
 #include <asm/hardware.h>
 #include <linux/list.h>
+#include <linux/printk.h>
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 #include <linux/usb/atmel_usba_udc.h>
@@ -63,13 +64,9 @@ static void submit_request(struct usba_ep *ep, struct usba_request *req)
 	req->submitted = 1;
 
 	next_fifo_transaction(ep, req);
-	if (req->last_transaction) {
-		usba_ep_writel(ep, CTL_DIS, USBA_TX_PK_RDY);
-		usba_ep_writel(ep, CTL_ENB, USBA_TX_COMPLETE);
-	} else {
+	if (ep_is_control(ep))
 		usba_ep_writel(ep, CTL_DIS, USBA_TX_COMPLETE);
-		usba_ep_writel(ep, CTL_ENB, USBA_TX_PK_RDY);
-	}
+	usba_ep_writel(ep, CTL_ENB, USBA_TX_PK_RDY);
 }
 
 static void submit_next_request(struct usba_ep *ep)
@@ -908,7 +905,6 @@ restart:
 			if (req) {
 				list_del_init(&req->queue);
 				request_complete(ep, req, 0);
-				submit_next_request(ep);
 			}
 			usba_ep_writel(ep, CTL_DIS, USBA_TX_COMPLETE);
 			ep->state = WAIT_FOR_SETUP;
@@ -1055,7 +1051,6 @@ static void usba_ep_irq(struct usba_udc *udc, struct usba_ep *ep)
 		DBG(DBG_BUS, "%s: TX PK ready\n", ep->ep.name);
 
 		if (list_empty(&ep->queue)) {
-			DBG(DBG_INT, "ep_irq: queue empty\n");
 			usba_ep_writel(ep, CTL_DIS, USBA_TX_PK_RDY);
 			return;
 		}
@@ -1069,7 +1064,6 @@ static void usba_ep_irq(struct usba_udc *udc, struct usba_ep *ep)
 
 		if (req->last_transaction) {
 			list_del_init(&req->queue);
-			submit_next_request(ep);
 			request_complete(ep, req, 0);
 		}
 
@@ -1217,15 +1211,14 @@ static struct usba_udc controller = {
 	},
 };
 
-#if ! CONFIG_IS_ENABLED(DM_USB_GADGET)
-
-int usb_gadget_handle_interrupts(int index)
+int dm_usb_gadget_handle_interrupts(struct udevice *dev)
 {
 	struct usba_udc *udc = &controller;
 
 	return usba_udc_irq(udc);
 }
 
+#if ! CONFIG_IS_ENABLED(DM_USB_GADGET)
 
 int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 {
@@ -1274,13 +1267,6 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 }
 
 #else /* !CONFIG_IS_ENABLED(DM_USB_GADGET) */
-
-int dm_usb_gadget_handle_interrupts(struct udevice *dev)
-{
-	struct usba_udc *udc = &controller;
-
-	return usba_udc_irq(udc);
-}
 
 static int usba_gadget_start(struct usb_gadget *g,
 			     struct usb_gadget_driver *driver)

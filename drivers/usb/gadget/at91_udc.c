@@ -21,6 +21,7 @@
 #include <asm/io.h>
 #include <asm/gpio.h>
 #include <asm/hardware.h>
+#include <linux/printk.h>
 #include <mach/at91_matrix.h>
 #include <linux/list.h>
 #include <linux/usb/ch9.h>
@@ -1452,14 +1453,14 @@ static const struct at91_udc_caps at91sam9261_udc_caps = {
 };
 #endif
 
-#if ! CONFIG_IS_ENABLED(DM_USB_GADGET)
-
-int usb_gadget_handle_interrupts(int index)
+int dm_usb_gadget_handle_interrupts(struct udevice *dev)
 {
 	struct at91_udc *udc = controller;
 
 	return at91_udc_irq(udc);
 }
+
+#if ! CONFIG_IS_ENABLED(DM_USB_GADGET)
 
 int usb_gadget_register_driver(struct usb_gadget_driver *driver)
 {
@@ -1572,13 +1573,6 @@ int at91_udc_probe(struct at91_udc_data *pdata)
 }
 
 #if CONFIG_IS_ENABLED(DM_USB_GADGET)
-
-int dm_usb_gadget_handle_interrupts(struct udevice *dev)
-{
-	struct at91_udc *udc = controller;
-
-	return at91_udc_irq(udc);
-}
 
 static struct at91_udc_data udc_data = {
 	.baseaddr	= ATMEL_BASE_UDP0,

@@ -58,12 +58,11 @@ int nand_erase_opts(struct mtd_info *mtd,
 	struct jffs2_unknown_node cleanmarker;
 	erase_info_t erase;
 	unsigned long erase_length, erased_length; /* in blocks */
-	int result = 0;
+	int result;
 	int percent_complete = -1;
 	const char *mtd_device = mtd->name;
 	struct mtd_oob_ops oob_opts;
 	struct nand_chip *chip = mtd_to_nand(mtd);
-	int skipping_block;
 
 	if ((opts->offset & (mtd->erasesize - 1)) != 0) {
 		printf("Attempt to erase non block-aligned data\n");
@@ -105,7 +104,7 @@ int nand_erase_opts(struct mtd_info *mtd,
 	     erase.addr += mtd->erasesize) {
 
 		schedule();
-		skipping_block = 0;
+
 		if (opts->lim && (erase.addr >= (opts->offset + opts->lim))) {
 			puts("Size of erase exceeds limit\n");
 			return -EFBIG;
@@ -113,29 +112,17 @@ int nand_erase_opts(struct mtd_info *mtd,
 		if (!opts->scrub) {
 			int ret = mtd_block_isbad(mtd, erase.addr);
 			if (ret > 0) {
-				if (!opts->quiet) {
-					const char * str;
-					/* Blocks containing the BBT are not actually
-					 * bad.  They are marked Reserved and reported
-					 * Bad in order to protect them from erasure.
-					 * Report them as such...
-					 */
-					if (mtd_block_isreserved(mtd, erase.addr))
-						str = "BBT";
-					else
-						str = "bad";
-
-					skipping_block = 1;
-					printf("\rSkipping %s block at  "
+				if (!opts->quiet)
+					printf("\rSkipping %s at  "
 					       "0x%08llx                 "
 					       "                         \n",
-					       str, erase.addr);
-				}
+					       ret == 1 ? "bad block" : "bbt reserved",
+					       erase.addr);
 
 				if (!opts->spread)
 					erased_length++;
 
-				goto show_output;
+				continue;
 
 			} else if (ret < 0) {
 				printf("\n%s: MTD get bad block failed: %d\n",
@@ -170,7 +157,7 @@ int nand_erase_opts(struct mtd_info *mtd,
 				continue;
 			}
 		}
-show_output:
+
 		if (!opts->quiet) {
 			unsigned long long n = erased_length * 100ULL;
 			int percent;
@@ -185,11 +172,10 @@ show_output:
 			if (percent != percent_complete) {
 				percent_complete = percent;
 
-				printf("\r%s at 0x%llx -- %3d%% complete.",
-				       skipping_block ? "Skipping" : "Erasing",
+				printf("\rErasing at 0x%llx -- %3d%% complete.",
 				       erase.addr, percent);
 
-				if (!skipping_block && opts->jffs2)
+				if (opts->jffs2 && result == 0)
 					printf(" Cleanmarker written at 0x%llx.",
 					       erase.addr);
 			}
@@ -198,7 +184,7 @@ show_output:
 	if (!opts->quiet)
 		printf("\n");
 
-	return result;
+	return 0;
 }
 
 #ifdef CONFIG_CMD_NAND_LOCK_UNLOCK

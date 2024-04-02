@@ -137,6 +137,9 @@ static int writeenv(size_t offset, u_char *buf)
 			if (nand_write(mtd, offset, &len, char_ptr))
 				return 1;
 
+			if (nand_verify(mtd, offset, len, char_ptr))
+				return 1;
+
 			offset += blocksize;
 			amount_saved += len;
 		}

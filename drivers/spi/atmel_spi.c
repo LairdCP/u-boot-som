@@ -17,6 +17,7 @@
 #include <asm/gpio.h>
 #endif
 #include <linux/bitops.h>
+#include <linux/printk.h>
 
 /*
  * Register definitions for the Atmel AT32/AT91 SPI Controller
@@ -337,8 +338,6 @@ static int atmel_spi_enable_clk(struct udevice *bus)
 
 	priv->bus_clk_rate = clk_rate;
 
-	clk_free(&clk);
-
 	return 0;
 }
 
@@ -354,8 +353,6 @@ static int atmel_spi_disable_clk(struct udevice *bus)
 	ret = clk_disable(&clk);
 	if (ret)
 		return ret;
-
-	clk_free(&clk);
 
 	return 0;
 }
