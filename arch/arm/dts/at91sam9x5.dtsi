@@ -428,6 +428,13 @@
 				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
 				clocks = <&tcb0_clk>, <&clk32k>;
 				clock-names = "t0_clk", "slow_clk";
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				timer0: timer@0 {
+					compatible = "atmel,tcb-timer";
+					reg = <0>, <1>;
+				};
 			};
 
 			tcb1: timer@f800c000 {

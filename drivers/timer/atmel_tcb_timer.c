@@ -153,6 +153,7 @@ static const struct timer_ops atmel_tcb_ops = {
 };
 
 static const struct udevice_id atmel_tcb_ids[] = {
+	{ .compatible = "atmel,at91sam9x5-tcb" },
 	{ .compatible = "atmel,sama5d2-tcb" },
 	{ }
 };

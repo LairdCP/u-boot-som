@@ -687,6 +687,7 @@
 					};
 
 					tcb0_clk: tcb0_clk@40 {
+						bootph-all;
 						#clock-cells = <0>;
 						reg = <40>;
 					};
@@ -956,6 +957,15 @@
 				interrupts = <40 IRQ_TYPE_LEVEL_HIGH 0>;
 				clocks = <&tcb0_clk>, <&clk32k>;
 				clock-names = "t0_clk", "slow_clk";
+				#address-cells = <1>;
+				#size-cells = <0>;
+				bootph-all;
+
+				timer0: timer@0 {
+					compatible = "atmel,tcb-timer";
+					reg = <0>, <1>;
+					bootph-all;
+				};
 			};
 
 			macb0: ethernet@f8020000 {
