@@ -519,6 +519,24 @@ usba_udc_set_selfpowered(struct usb_gadget *gadget, int is_selfpowered)
 	return 0;
 }
 
+static int usba_udc_pullup(struct usb_gadget *gadget, int is_on)
+{
+	struct usba_udc *udc = to_usba_udc(gadget);
+	unsigned long flags;
+	u32 ctrl;
+
+	spin_lock_irqsave(&udc->lock, flags);
+	ctrl = usba_readl(udc, CTRL);
+	if (is_on)
+		ctrl &= ~USBA_DETACH;
+	else
+		ctrl |= USBA_DETACH;
+	usba_writel(udc, CTRL, ctrl);
+	spin_unlock_irqrestore(&udc->lock, flags);
+
+	return 0;
+}
+
 #if CONFIG_IS_ENABLED(DM_USB_GADGET)
 static int usba_gadget_start(struct usb_gadget *g,
 			     struct usb_gadget_driver *driver);
@@ -529,6 +547,7 @@ static const struct usb_gadget_ops usba_udc_ops = {
 	.get_frame		= usba_udc_get_frame,
 	.wakeup			= usba_udc_wakeup,
 	.set_selfpowered	= usba_udc_set_selfpowered,
+	.pullup			= usba_udc_pullup,
 #if CONFIG_IS_ENABLED(DM_USB_GADGET)
 	.udc_start		= usba_gadget_start,
 	.udc_stop		= usba_gadget_stop,
