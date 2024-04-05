@@ -100,18 +100,25 @@ static int atmel_tcb_probe(struct udevice *dev)
 	struct clk clk;
 	ulong clk_rate;
 	int ret;
+	ofnode node;
 
-	if (!device_is_compatible(dev->parent, "atmel,sama5d2-tcb"))
+	ofnode_for_each_subnode(node, dev_ofnode(dev)) {
+		const char *compat = ofnode_read_string(node, "compatible");
+		if (compat && !strcmp(compat, "atmel,tcb-timer"))
+			break;
+	}
+
+	if (!ofnode_valid(node))
 		return -EINVAL;
 
 	/* Currently, we only support channel 0 and 1 to be chained */
-	if (dev_read_addr_index(dev, 0) != 0 &&
-	    dev_read_addr_index(dev, 1) != 1) {
+	if (ofnode_read_u32_index_default(node, "reg", 0, 100) != 0 ||
+	    ofnode_read_u32_index_default(node, "reg", 1, 100) != 1) {
 		printf("Error: only chained timers 0 and 1 are supported\n");
 		return -EINVAL;
 	}
 
-	ret = clk_get_by_name(dev->parent, "t0_clk", &clk);
+	ret = clk_get_by_name(dev, "t0_clk", &clk);
 	if (ret)
 		return -EINVAL;
 
@@ -136,7 +143,7 @@ static int atmel_tcb_of_to_plat(struct udevice *dev)
 {
 	struct atmel_tcb_plat *plat = dev_get_plat(dev);
 
-	plat->base = dev_read_addr_ptr(dev->parent);
+	plat->base = dev_read_addr_ptr(dev);
 
 	return 0;
 }
@@ -146,7 +153,7 @@ static const struct timer_ops atmel_tcb_ops = {
 };
 
 static const struct udevice_id atmel_tcb_ids[] = {
-	{ .compatible = "atmel,tcb-timer" },
+	{ .compatible = "atmel,sama5d2-tcb" },
 	{ }
 };
 
