@@ -19,7 +19,7 @@
 
 #define TCB_CMR(chan)		(0x4 + TCB_CHAN(chan))
 #define  TCB_CMR_WAVE		(1 << 15)
-#define  TCB_CMR_TIMER_CLOCK2	1
+#define  TCB_CMR_TIMER_CLOCK4	3
 #define  TCB_CMR_XC1		6
 #define  TCB_CMR_ACPA_SET	(1 << 16)
 #define  TCB_CMR_ACPC_CLEAR	(2 << 18)
@@ -40,7 +40,7 @@
 #define TCB_WPMR		0xe4
 #define  TCB_WPMR_WAKEY		0x54494d
 
-#define TCB_CLK_DIVISOR		8
+#define TCB_CLK_DIVISOR		128
 struct atmel_tcb_plat {
 	void __iomem *base;
 };
@@ -76,7 +76,7 @@ static void atmel_tcb_configure(void __iomem *base)
 	 * Channel 0 is configured to generate a clock on TIOA0 which is cleared
 	 * when reaching 0x80000000 and set when reaching 0.
 	 */
-	writel(TCB_CMR_TIMER_CLOCK2 | TCB_CMR_WAVE | TCB_CMR_ACPA_SET
+	writel(TCB_CMR_TIMER_CLOCK4 | TCB_CMR_WAVE | TCB_CMR_ACPA_SET
 		   | TCB_CMR_ACPC_CLEAR, base + TCB_CMR(0));
 	writel(0x80000000, base + TCB_RC(0));
 	writel(0x1, base + TCB_RA(0));
