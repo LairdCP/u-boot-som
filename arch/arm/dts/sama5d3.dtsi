@@ -151,12 +151,12 @@
 				clock-names = "t0_clk", "slow_clk";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				bootph-all;
+				u-boot,dm-pre-reloc;
 
 				timer0: timer@0 {
 					compatible = "atmel,tcb-timer";
 					reg = <0>, <1>;
-					bootph-all;
+					u-boot,dm-pre-reloc;
 				};
 			};
 
@@ -1227,7 +1227,7 @@
 					};
 
 					tcb0_clk: tcb0_clk@26 {
-						bootph-all;
+						u-boot,dm-pre-reloc;
 						#clock-cells = <0>;
 						reg = <26>;
 						atmel,clk-output-range = <0 133000000>;

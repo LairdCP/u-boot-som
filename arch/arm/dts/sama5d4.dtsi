@@ -687,7 +687,7 @@
 					};
 
 					tcb0_clk: tcb0_clk@40 {
-						bootph-all;
+						u-boot,dm-pre-reloc;
 						#clock-cells = <0>;
 						reg = <40>;
 					};
@@ -959,12 +959,12 @@
 				clock-names = "t0_clk", "slow_clk";
 				#address-cells = <1>;
 				#size-cells = <0>;
-				bootph-all;
+				u-boot,dm-pre-reloc;
 
 				timer0: timer@0 {
 					compatible = "atmel,tcb-timer";
 					reg = <0>, <1>;
-					bootph-all;
+					u-boot,dm-pre-reloc;
 				};
 			};
 
