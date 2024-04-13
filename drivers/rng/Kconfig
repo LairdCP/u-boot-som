@@ -114,9 +114,10 @@ config RNG_TURRIS_RWTM
 	  Firmware from CZ.NIC is used.
 
 config RNG_ATMEL
-	bool "Atmel random number generator"
+	bool "Atmel Random Number Generator"
 	depends on ARCH_AT91
-	select LIB_HW_RAND
+	depends on CPU_V7A || SAM9X60
+	default y
 	help
 	  Enable random number generator for Microchip/Atmel CPUs.
 

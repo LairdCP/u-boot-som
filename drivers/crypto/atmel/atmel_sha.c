@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
- * Atmel SHA engine
+ * Copyright (c) 2019 Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
  */
 
 #include <common.h>
@@ -145,7 +146,7 @@ static void atmel_sha_update(struct sha_ctx *ctx, const void *buf, size_t size, 
 		chunk += block_size;
 	}
 
-	/* We are alligned take from source for any additional */
+	/* We are aligned take from source for any additional */
 	while (size >= block_size) {
 		debug("Atmel sha, sending full %u byte chunk\n", block_size);
 
@@ -160,7 +161,7 @@ static void atmel_sha_update(struct sha_ctx *ctx, const void *buf, size_t size, 
 		buf += block_size;
 		ctx->length += block_size;
 
-#if CONFIG_IS_ENABLED(HW_WATCHDOG) || CONFIG_IS_ENABLED(WATCHDOG)
+#if IS_ENABLED(CONFIG_HW_WATCHDOG) || CONFIG_IS_ENABLED(WATCHDOG)
 		chunk += block_size;
 		if (chunk >= chunk_sz) {
 			chunk -= chunk_sz;
