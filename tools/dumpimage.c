@@ -231,7 +231,7 @@ int main(int argc, char **argv)
 			struct fdt_header fdt;
 
 			retval = read(ifd, &fdt, sizeof(fdt));
-			if (retval < 0 || fdt_magic(&fdt) != FDT_MAGIC) {
+				if (retval < sizeof(fdt) || fdt_magic(&fdt) != FDT_MAGIC) {
 				fprintf(stderr, "%s: Can't stat \"%s\"\n",
 					params.cmdname, params.imagefile);
 				exit(EXIT_FAILURE);
