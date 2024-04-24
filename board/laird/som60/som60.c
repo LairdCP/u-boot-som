@@ -9,6 +9,7 @@
 #include <common.h>
 #include <environment.h>
 #include <debug_uart.h>
+#include <spl.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
@@ -379,6 +380,14 @@ int board_early_init_f(void)
 {
 #ifdef CONFIG_DEBUG_UART
 	debug_uart_init();
+#endif
+
+#ifdef CONFIG_SPL_BUILD
+	int ret = spl_early_init();
+	if (ret) {
+		debug("spl_early_init() failed: %d\n", ret);
+		hang();
+	}
 #endif
 
     return 0;
