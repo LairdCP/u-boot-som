@@ -35,7 +35,7 @@
 DECLARE_GLOBAL_DATA_PTR;
 
 #define FS_MAX_KEY_SIZE     64
-#define FS_KEY_WINDOW       0x31e000
+#define FS_KEY_WINDOW       (ATMEL_BASE_SRAM1 + 0xe000)
 
 #define LEGACY_BOARD_HW_ID  0x00000000
 #define MAX_BOARD_HW_ID     0x00000004
@@ -525,6 +525,14 @@ void som60_fs_key_inject(void)
 
 	memcpy(key, fs_key, fs_key_len);
 }
+#else
+static void som60_fs_key_inject(void)
+{
+	u8	*key = (u8 *)FS_KEY_WINDOW;
+
+	/* Zero out key area just in case */
+	memset(key, 0, FS_MAX_KEY_SIZE);
+}
 #endif
 
 int board_late_init(void)
@@ -583,10 +591,6 @@ int board_init(void)
 
 	som60_custom_hw_init();
 
-#ifdef CONFIG_FIT_SIGNATURE
-	som60_fs_key_inject();
-#endif
-
 	return 0;
 }
 
@@ -603,6 +607,8 @@ void board_quiesce_devices(void)
 	at91_periph_clk_disable(ATMEL_ID_SMC);
 #endif
 #endif
+
+	som60_fs_key_inject();
 }
 
 int dram_init(void)
