@@ -188,15 +188,15 @@ int main(int argc, char **argv)
 			sbuf.st_mode = S_IFREG;
 
 			if (!sbuf.st_size) {
-				fdt32_t fdt[2];
+				struct fdt_header fdt;
 
-				retval = read(ifd, fdt, sizeof(fdt));
-				if (retval < 0 || fdt_magic(fdt) != FDT_MAGIC) {
+				retval = read(ifd, &fdt, sizeof(fdt));
+				if (retval < sizeof(fdt) || fdt_magic(&fdt) != FDT_MAGIC) {
 					fprintf(stderr, "%s: Can't stat \"%s\"\n",
 						params.cmdname, params.imagefile);
 					goto fail;
 				}
-				sbuf.st_size = fdt_totalsize(fdt);
+				sbuf.st_size = fdt_totalsize(&fdt);
 				lseek(ifd, 0, SEEK_SET);
 			}
 		} else if (fstat(ifd, &sbuf) < 0) {
