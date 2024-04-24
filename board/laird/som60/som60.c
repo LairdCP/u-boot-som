@@ -10,6 +10,7 @@
 #include <environment.h>
 #include <debug_uart.h>
 #include <spl.h>
+#include <watchdog.h>
 
 #include <asm/arch/at91_common.h>
 #include <asm/arch/gpio.h>
@@ -312,6 +313,8 @@ void board_fit_image_post_process(void **p_image, size_t *p_size)
 	/* Reduce PKCS7 padded length */
 	padding = *(image + (*p_size - 1));
 	*p_size = *p_size - padding;
+
+	WATCHDOG_RESET();
 }
 
 static void som60_fs_key_inject(void)
@@ -391,6 +394,12 @@ int board_early_init_f(void)
 #endif
 
 #ifdef CONFIG_SPL_BUILD
+#ifdef CONFIG_HW_WATCHDOG
+	hw_watchdog_init();
+
+	WATCHDOG_RESET();
+#endif
+
 	int ret = spl_early_init();
 	if (ret) {
 		debug("spl_early_init() failed: %d\n", ret);
@@ -441,6 +450,8 @@ void board_quiesce_devices(void)
 #endif
 
 	som60_fs_key_inject();
+
+	WATCHDOG_RESET();
 }
 
 int dram_init(void)
