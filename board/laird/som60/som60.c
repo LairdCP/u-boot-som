@@ -29,10 +29,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#ifdef CONFIG_FIT_SIGNATURE
 #define FS_MAX_KEY_SIZE	64
-#define FS_KEY_WINDOW	0x31e000
+#define FS_KEY_WINDOW	(ATMEL_BASE_SRAM1 + 0xe000)
 
+#ifdef CONFIG_FIT_SIGNATURE
 struct key_prop {
 	const void *cipher_key;
 	int cipher_key_len;
@@ -314,7 +314,7 @@ void board_fit_image_post_process(void **p_image, size_t *p_size)
 	*p_size = *p_size - padding;
 }
 
-void som60_fs_key_inject(void)
+static void som60_fs_key_inject(void)
 {
 	u8	*key = (u8 *)FS_KEY_WINDOW;
 	const void *fs_key;
@@ -339,6 +339,14 @@ void som60_fs_key_inject(void)
 	}
 
 	memcpy(key, fs_key, fs_key_len);
+}
+#else
+static void som60_fs_key_inject(void)
+{
+	u8	*key = (u8 *)FS_KEY_WINDOW;
+
+	/* Zero out key area just in case */
+	memset(key, 0, FS_MAX_KEY_SIZE);
 }
 #endif
 
@@ -413,10 +421,6 @@ int board_init(void)
 
 	som60_custom_hw_init();
 
-#ifdef CONFIG_FIT_SIGNATURE
-	som60_fs_key_inject();
-#endif
-
 	return 0;
 }
 
@@ -435,6 +439,8 @@ void board_quiesce_devices(void)
 	at91_periph_clk_disable(ATMEL_ID_SMC);
 #endif
 #endif
+
+	som60_fs_key_inject();
 }
 
 int dram_init(void)
