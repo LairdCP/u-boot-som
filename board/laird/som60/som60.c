@@ -779,17 +779,11 @@ static void at91sama5d3_slowclock_init(void)
 	tmp = readl(reg);
 	tmp &= ~AT91SAM9G45_SCKCR_RCEN;
 	writel(tmp, reg);
-
-	/* Delay makes boot much more stable
-	 * This delay present on boostrap for the case of the oscillator
-	 * not in bypass mode, which is all Microchip demo boards
-	 * My guess Microchip misattributed the reson for delay need
-	 */
-	udelay(1300000);
 }
 
 void spl_board_init(void)
 {
+	/* Run after spl_early_init because using timer delay */
 	at91sama5d3_slowclock_init();
 
 	at91_disable_smd_clock();
