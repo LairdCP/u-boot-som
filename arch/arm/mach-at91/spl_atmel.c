@@ -22,6 +22,11 @@ static void switch_to_main_crystal_osc(void)
 	struct at91_pmc *pmc = (struct at91_pmc *)ATMEL_BASE_PMC;
 	u32 tmp;
 
+	/*
+	 * Enable the Main Crystal Oscillator
+	 * tST_max = 2ms
+	 * Startup Time: 32768 * 2ms / 8 = 8
+	 */
 	tmp = readl(&pmc->mor);
 	tmp &= ~AT91_PMC_MOR_OSCOUNT(0xff);
 	tmp &= ~AT91_PMC_MOR_KEY(0xff);
@@ -46,6 +51,7 @@ static void switch_to_main_crystal_osc(void)
 		hang();
 #endif
 
+	/* Switch from internal 12MHz RC to the Main Crystal Oscillator */
 	tmp = readl(&pmc->mor);
 /*
  * some boards have an external oscillator with driving.
@@ -69,13 +75,16 @@ static void switch_to_main_crystal_osc(void)
 	while (!(readl(&pmc->sr) & AT91_PMC_IXR_MOSCSELS))
 		;
 
+#if 0
 #if !defined(CONFIG_SAMA5D2)
 	/* Wait until MAINRDY field is set to make sure main clock is stable */
 	while (!(readl(&pmc->mcfr) & AT91_PMC_MAINRDY))
 		;
 #endif
+#endif
 
 #if !defined(CONFIG_SAMA5D4) && !defined(CONFIG_SAMA5D2)
+	/* Disable the 12MHz RC Oscillator */
 	tmp = readl(&pmc->mor);
 	tmp &= ~AT91_PMC_MOR_MOSCRCEN;
 	tmp &= ~AT91_PMC_MOR_KEY(0xff);
