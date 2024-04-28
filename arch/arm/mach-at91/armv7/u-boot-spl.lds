@@ -21,12 +21,14 @@ OUTPUT_ARCH(arm)
 ENTRY(_start)
 SECTIONS
 {
+	. = ALIGN(4);
 	.text      :
 	{
-		__start = .;
+		__image_copy_start = .;
 		*(.vectors)
 		arch/arm/cpu/armv7/start.o	(.text*)
 		*(.text*)
+		*(.glue*)
 	} >.sram
 
 	. = ALIGN(4);
@@ -48,7 +50,7 @@ SECTIONS
 
 	_image_binary_end = .;
 
-	.bss :
+	.bss (NOLOAD) :
 	{
 		. = ALIGN(4);
 		__bss_start = .;

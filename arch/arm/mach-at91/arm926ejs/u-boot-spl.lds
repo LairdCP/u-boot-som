@@ -14,12 +14,14 @@ OUTPUT_ARCH(arm)
 ENTRY(_start)
 SECTIONS
 {
+	. = ALIGN(4);
 	.text      :
 	{
-		__start = .;
+		__image_copy_start = .;
 		*(.vectors)
 		arch/arm/cpu/arm926ejs/start.o	(.text*)
 		*(.text*)
+		*(.glue*)
 	} >.sram
 
 	. = ALIGN(4);
@@ -41,7 +43,7 @@ SECTIONS
 
 	_image_binary_end = .;
 
-	.bss :
+	.bss (NOLOAD) :
 	{
 		. = ALIGN(4);
 		__bss_start = .;
@@ -52,7 +54,7 @@ SECTIONS
 }
 
 #if defined(IMAGE_MAX_SIZE)
-ASSERT(__image_copy_end - __start <= (IMAGE_MAX_SIZE), \
+ASSERT(__image_copy_end - __image_copy_start <= (IMAGE_MAX_SIZE), \
 	"SPL image too big");
 #endif
 
