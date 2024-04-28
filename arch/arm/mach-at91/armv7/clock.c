@@ -119,7 +119,8 @@ void at91_plla_init(u32 pllar)
 	struct at91_pmc *pmc = (struct at91_pmc *)ATMEL_BASE_PMC;
 
 	writel(pllar, &pmc->pllar);
-	while (!(readl(&pmc->sr) & (AT91_PMC_LOCKA | AT91_PMC_MCKRDY)))
+	while ((readl(&pmc->sr) & (AT91_PMC_LOCKA | AT91_PMC_MCKRDY))
+		!= (AT91_PMC_LOCKA | AT91_PMC_MCKRDY))
 		;
 }
 
