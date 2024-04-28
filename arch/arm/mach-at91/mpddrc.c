@@ -16,15 +16,16 @@
 #define SAMA5D3_MPDDRC_VERSION		0x140
 
 static inline void atmel_mpddr_op(const struct atmel_mpddr *mpddr,
-	      int mode,
-	      u32 ram_address)
+	      int mode, u32 ram_address)
 {
 	writel(mode, &mpddr->mr);
 	readl(&mpddr->mr);
 
-	dmb();
-
 	writel(0, ram_address);
+
+	/* Unknown reason, ported from bootstrap, fixes random hang */
+	if (mode == ATMEL_MPDDRC_MR_MODE_NORMAL_CMD)
+		writel(0, ram_address);
 }
 
 static int ddr2_decodtype_is_seq(const unsigned int base, u32 cr)
