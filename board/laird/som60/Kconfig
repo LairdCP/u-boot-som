@@ -62,11 +62,11 @@ config SYS_EEPROM_SETUP
 	select SPL_I2C if SUPPORT_SPL
 	select SPL_I2C_EEPROM if SUPPORT_SPL
 	select SPL_NVMEM if SUPPORT_SPL
-	select SPL_DISPLAY_PRINT
 
 config SPL_SYS_MENU
 	bool "Board configuration SPL Menu"
 	depends on SYS_EEPROM_SETUP
+	select SPL_DISPLAY_PRINT
 	help
 		Enables programming and verification into EEPROM of
 		board HW ID and MAC addresses for manufacturing.
