@@ -72,7 +72,7 @@ static void set_mac_address_menu(const char *buf, bool use_dvk)
 	}
 }
 
-void mini_spl_menu(void)
+void spl_display_print(void)
 {
 	int val, ret;
 	char chr;
@@ -103,6 +103,8 @@ void mini_spl_menu(void)
 			ret = board_hw_id_nvmem_write(val);
 			if (ret)
 				printf("EEPROM Write Error %d\n", ret);
+			else
+				puts("Reset module for hw id to activate");
 			break;
 		case '1':
 			puts("hw id read\n");

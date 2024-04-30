@@ -29,7 +29,6 @@
 
 #include <jffs2/load_kernel.h>
 
-#include "spl_menu.h"
 #include "som60_eeprom.h"
 
 DECLARE_GLOBAL_DATA_PTR;

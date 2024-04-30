@@ -103,15 +103,9 @@ __weak void redirect_int_from_saic_to_aic(void)
 	/* This only be used for sama5d4 soc now */
 }
 
-/* empty stub to satisfy current lowlevel_init, can be removed any time */
 void s_init(void)
 {
-}
-
-void board_init_f(ulong dummy)
-{
-	int ret;
-
+	/* Setup cpu and peripheral clock here for debug uart baud rate */
 	switch_to_main_crystal_osc();
 
 #ifdef CONFIG_SAMA5D2
@@ -126,13 +120,16 @@ void board_init_f(ulong dummy)
 	/* PMC configuration */
 	at91_pmc_init();
 
-	at91_clock_init(CFG_SYS_AT91_MAIN_CLOCK);
-
 	matrix_init();
 
 	redirect_int_from_saic_to_aic();
+}
 
-	board_early_init_f();
+void board_init_f(ulong dummy)
+{
+	int ret;
+
+	at91_clock_init(CFG_SYS_AT91_MAIN_CLOCK);
 
 #if CONFIG_IS_ENABLED(OF_CONTROL)
 	ret = spl_early_init();
@@ -144,7 +141,16 @@ void board_init_f(ulong dummy)
 
 	timer_init();
 
-	preloader_console_init();
+	board_early_init_f();
 
 	mem_init();
+
+	ret = spl_init();
+	if (ret) {
+		debug("spl_init() failed: %d\n", ret);
+		hang();
+	}
+
+	preloader_console_init();
+
 }
