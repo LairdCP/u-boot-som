@@ -914,10 +914,6 @@ void mem_init(void)
 	nand_init();
 #endif
 
-#ifdef CONFIG_SPL_SYS_MENU
-	mini_spl_menu();
-#endif
-
 	ram_config = &ram_configs[board_hw_id()];
 	printf("Initializing RAM module %s\n", ram_config->name);
 	if (ram_config->type == RAM_TYPE_LPDDR1)
