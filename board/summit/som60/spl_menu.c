@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2022 Laird Connectivity
- * Erik Strack <erik.strack@lairdconnect.com>
+ * Copyright (C) 2022 Ezurio
+ * Erik Strack <erik.strack@ezurio.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */

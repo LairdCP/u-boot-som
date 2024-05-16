@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2018 Laird Connectivity
- *	Ben Whitten <ben.whitten@lairdconnect.com>
- *	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
+ * Copyright (C) 2018 Ezurio
+ *	Ben Whitten <ben.whitten@ezurio.com>
+ *	Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */
@@ -51,22 +51,22 @@ typedef enum {
 	DDR2_JSFCBB3YH3BBG_425A                  = 2,  // som60x2v2
 	MT29C2G24MAAAAKAMD_5                     = 3,  // som60
 	MT29C4G48MAYBBAMR_48                     = 4,  // som60x2
-} laird_ram_ic_t;
+} ram_ic_t;
 
 typedef enum {
 	RAM_TYPE_LPDDR1,
 	RAM_TYPE_LPDDR2,
-} laird_ram_type;
+} ram_type;
 
 typedef struct {
 	const char *name;
-	laird_ram_type type;
+	ram_type type;
 	unsigned long nand_size;
 	unsigned long sdram_size;
 	struct atmel_mpddrc_config ddr_config;
-} laird_ram_config_t;
+} ram_config_t;
 
-static const laird_ram_config_t ram_configs[] = {
+static const ram_config_t ram_configs[] = {
 #if defined(CONFIG_TARGET_WB50N) || defined(CONFIG_TARGET_WB50N_SYSD)
 	[MT46H16M32LF] = {
 		.name = "W949D2DB",
@@ -511,7 +511,7 @@ void som60_fs_key_inject(void)
 		return;
 	}
 
-	fs_key = fdt_getprop(gd->fdt_blob, enc_node, "laird,fs-key", &fs_key_len);
+	fs_key = fdt_getprop(gd->fdt_blob, enc_node, "summit,fs-key", &fs_key_len);
 	if (!fs_key) {
 		debug("No fs-key property found\n");
 		return;
@@ -908,7 +908,7 @@ void mem_init_lpddr1(const struct atmel_mpddrc_config *mpddr_value)
 
 void mem_init(void)
 {
-	const laird_ram_config_t* ram_config;
+	const ram_config_t* ram_config;
 
 #ifdef CONFIG_SPL_NAND_SUPPORT
 	nand_init();

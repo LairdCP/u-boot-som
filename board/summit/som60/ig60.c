@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2018 Laird Connectivity
- * Don Ferencz <donald.ferencz@lairdconnect.com>
+ * Copyright (C) 2018 Ezurio
+ * Don Ferencz <donald.ferencz@ezurio.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */

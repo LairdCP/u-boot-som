@@ -1,6 +1,6 @@
 /*
- * Copyright (C) 2020 Laird Connectivity
- * Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
+ * Copyright (C) 2020 Ezurio
+ * Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
  *
  * SPDX-License-Identifier:	GPL-2.0+
  */

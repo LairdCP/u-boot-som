@@ -2,7 +2,7 @@
 /*
  * at91-wb50n.dtsi - Device Tree include file for wb50n cpu module
  *
- *  Copyright (C) 2018-2022 Laird Connectivity
+ *  Copyright (C) 2018-2022 Ezurio
  *
  */
 
@@ -15,7 +15,7 @@
 	 * replaced in manufacturing with a production key.
 	 */
 	encryption {
-		laird,fs-key = <
+		summit,fs-key = <
 			0xbf4a626e 0x68ddba72 0x36094531 0x15fa806c
 			0x38862932 0x3078d54f 0x0b3e3d9f 0x0adfaae5
 			0xb194f2cd 0x402bc3c6 0x35b7d66c 0xd06c9e8d

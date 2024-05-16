@@ -2,15 +2,15 @@
 /*
  * at91-wb40n.dts - Device Tree include file for WB40N CPU module
  *
- * Copyright (C) 2020 Laird Connectivity
+ * Copyright (C) 2020 Ezurio
  *
  */
 
 #include "at91sam9g20.dtsi"
 
 / {
-	model = "Laird Workgroup Bridge 40N - AT91SAM9G20";
-	compatible = "laird,wb40n", "atmel,at91sam9g20", "atmel,at91sam9";
+	model = "Summit Workgroup Bridge 40N - AT91SAM9G20";
+	compatible = "summit,wb40n", "atmel,at91sam9g20", "atmel,at91sam9";
 
 	chosen {
 		stdout-path = "serial0:115200n8";

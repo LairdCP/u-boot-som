@@ -1,8 +1,8 @@
 /*
  * at91-ig60sd.dts - Device Tree file for the Sentrius IG60 SD
  *
- *  Copyright (C) 2019 Laird Connectivity,
- *		  2019 Vishal Verma <vishal.verma@lairdconnect.com>
+ *  Copyright (C) 2019 Ezurio,
+ *		  2019 Vishal Verma <vishal.verma@ezurio.com>
  *
  * Licensed under GPLv2 or later.
  */
@@ -14,6 +14,6 @@
 
 / {
 	model = "Laird IG60 LL";
-	compatible = "laird,ig60ll", "laird,som60", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
+	compatible = "summit,ig60ll", "summit,som60", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
 };
 

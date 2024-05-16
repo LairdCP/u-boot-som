@@ -1,7 +1,7 @@
 SOM60/WB50 MODULE
-M:	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
+M:	Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
 S:	Maintained
-F:	board/laird/som60/
+F:	board/summit/som60/
 F:	include/configs/ig60.h
 F:	include/configs/som6050_common.h
 F:	include/configs/som60.h

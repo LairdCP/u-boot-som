@@ -1,12 +1,12 @@
-if TARGET_WB40N
+if TARGET_WB45N
 
 config SYS_BOARD
-	default "wb40n"
+	default "wb45n"
 
 config SYS_VENDOR
-	default "laird"
+	default "summit"
 
 config SYS_CONFIG_NAME
-	default "wb40n"
+	default "wb45n"
 
 endif

@@ -1,7 +1,7 @@
 WB40N CPU MODULE
-M:	Boris Krasnovskiy <boris.krasnovskiy@lairdconnect.com>
+M:	Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
 S:	Maintained
-F:	board/laird/wb40n/
+F:	board/summit/wb40n/
 F:	include/configs/wb40n.h
 F:	configs/wb40n_defconfig
 F:	arch/arm/dts/at91-wb40n.dts

@@ -1,8 +1,8 @@
 /*
  * at91-ig60.dtsi - Device Tree file for the Sentrius IG60
  *
- *  Copyright (C) 2018 Laird Connectivity,
- *		  2018 James Kalbfleisch <james.kalbfleisch@lairdconnect.com>
+ *  Copyright (C) 2018 Ezurio,
+ *		  2018 James Kalbfleisch <james.kalbfleisch@ezurio.com>
  *
  * Licensed under GPLv2 or later.
  */

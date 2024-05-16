@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+
- * Copyright (C) 2022 Laird Connectivity
- * Erik Strack <erik.strack@lairdconnect.com>
+ * Copyright (C) 2022 Ezurio
+ * Erik Strack <erik.strack@ezurio.com>
  *
  * Portions Copyright 2006 Freescale Semiconductor
  * York Sun (yorksun@freescale.com)

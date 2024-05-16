@@ -322,23 +322,23 @@ config TARGET_VINCO
 	imply CMD_DM
 
 config TARGET_WB40N
-	bool "Support Laird Connectivity WB40N"
+	bool "Support Ezurio WB40N"
 	select BOARD_LATE_INIT
 	select AT91SAM9G20
 
 config TARGET_WB45N
-	bool "Support Laird Connectivity WB45N"
+	bool "Support Ezurio WB45N"
 	select BOARD_LATE_INIT
 	select AT91SAM9X5
 
 config TARGET_WB50N
-	bool "Support Laird Connectivity WB50N"
+	bool "Support Ezurio WB50N"
 	select BOARD_LATE_INIT
 	select SAMA5D3
 	select OF_BOARD_SETUP
 
 config TARGET_WB50N_SYSD
-	bool "Support Laird Connectivity WB50N SYSD"
+	bool "Support Ezurio WB50N SYSD"
 	select BOARD_LATE_INIT
 	select SAMA5D3
 	select OF_BOARD_SETUP
@@ -347,7 +347,7 @@ config TARGET_WB50N_SYSD
 	select SPL_DRIVERS_MISC
 
 config TARGET_SOM60
-	bool "Support Laird Connectivity SOM60"
+	bool "Support Ezurio SOM60"
 	select BOARD_LATE_INIT
 	select SAMA5D3
 	select OF_BOARD_SETUP
@@ -357,7 +357,7 @@ config TARGET_SOM60
 	select SPL_DRIVERS_MISC
 
 config TARGET_IG60
-	bool "Support Laird Connectivity IG60"
+	bool "Support Ezurio IG60"
 	select BOARD_LATE_INIT
 	select SAMA5D3
 	select OF_BOARD_SETUP
@@ -428,9 +428,9 @@ source "board/egnite/ethernut5/Kconfig"
 source "board/esd/meesc/Kconfig"
 source "board/gardena/smart-gateway-at91sam/Kconfig"
 source "board/l+g/vinco/Kconfig"
-source "board/laird/wb40n/Kconfig"
-source "board/laird/wb45n/Kconfig"
-source "board/laird/som60/Kconfig"
+source "board/summit/wb40n/Kconfig"
+source "board/summit/wb45n/Kconfig"
+source "board/summit/som60/Kconfig"
 source "board/ronetix/pm9261/Kconfig"
 source "board/ronetix/pm9263/Kconfig"
 source "board/ronetix/pm9g45/Kconfig"
