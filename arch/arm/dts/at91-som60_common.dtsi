@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * at91-som60.dtsi - Device Tree file for the SOM60 module
+ * at91-som60_common.dtsi - Device Tree file for the SOM60 module
  *
- *  Copyright (C) 2018-2022 Ezurio,
+ *  Copyright (C) 2018-2024 Ezurio,
  *		  2018 Ben Whitten <ben.whitten@ezurio.com>
  *		  2018 Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
  *
@@ -34,12 +34,46 @@
 				board {
 					bootph-all;
 					pinctrl_nand0_wp: nand0_wp {
-						bootph-all;
 						atmel,pins = <AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
 					};
 				};
-			};
 
+				mmc0 {
+					mmc0_dat4_7 {
+						/delete-node/ u-boot,dm-pre-reloc;
+					};
+				};
+
+				mmc1 {
+					/delete-property/ u-boot,dm-pre-reloc;
+					mmc1_clk_cmd_dat0 {
+						/delete-property/ u-boot,dm-pre-reloc;
+					};
+
+					mmc1_dat1_3 {
+						/delete-property/ u-boot,dm-pre-reloc;
+					};
+				};
+
+				spi0 {
+					/delete-property/ u-boot,dm-pre-reloc;
+					spi0-0 {
+						/delete-property/ u-boot,dm-pre-reloc;
+					};
+				};
+
+				spi1 {
+					/delete-property/ u-boot,dm-pre-reloc;
+					spi1-0 {
+						/delete-property/ u-boot,dm-pre-reloc;
+					};
+				};
+			};
+/*
+			sha@f8034000 {
+				u-boot,dm-pre-reloc;
+			};
+*/
 			watchdog@fffffe40 {
 				bootph-all;
 				status = "okay";
@@ -61,6 +95,10 @@
 
 &main_xtal {
 	clock-frequency = <12000000>;
+};
+
+&slow_osc {
+	atmel,osc-bypass;
 };
 
 &macb0 {
@@ -140,4 +178,20 @@
 			reg = <0x02 0x06>;
 		};
 	};
+};
+/*
+&sha_clk {
+	u-boot,dm-pre-reloc;
+};
+*/
+&mci1_clk {
+	/delete-property/ bootph-all;
+};
+
+&spi0_clk {
+	/delete-property/ bootph-all;
+};
+
+&spi1_clk {
+	/delete-property/ bootph-all;
 };

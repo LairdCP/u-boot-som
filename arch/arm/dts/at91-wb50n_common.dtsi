@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * at91-wb50n_common.dtsi - Device Tree include file for wb50n CPU module
+ * at91-wb50n_common.dtsi - Device Tree file for the WB50n module
  *
- *  Copyright (C) 2018-2020 Ezurio
+ *  Copyright (C) 2018-2020 Laird Connectivity
  *
  */
 
@@ -24,8 +24,8 @@
 		apb {
 			pinctrl@fffff200 {
 				board {
+					bootph-all;
 					pinctrl_nand0_wp: nand0_wp {
-						bootph-all;
 						atmel,pins = <AT91_PIOE 14 AT91_PERIPH_GPIO AT91_PINCTRL_NONE>;
 					};
 
@@ -38,13 +38,59 @@
 						atmel,pins = <AT91_PIOB 13 AT91_PERIPH_GPIO AT91_PINCTRL_DEGLITCH>; /* PB13 GPIO with deglitch */
 					};
 				};
-			};
 
+				mmc0 {
+					mmc0_dat4_7 {
+						/delete-node/ bootph-all;
+					};
+				};
+
+				mmc1 {
+					/delete-property/ bootph-all;
+					mmc1_clk_cmd_dat0 {
+						/delete-property/ bootph-all;
+					};
+
+					mmc1_dat1_3 {
+						/delete-property/ bootph-all;
+					};
+				};
+
+				spi0 {
+					/delete-property/ bootph-all;
+					spi0-0 {
+						/delete-property/ bootph-all;
+					};
+				};
+
+				spi1 {
+					/delete-property/ bootph-all;
+					spi1-0 {
+						/delete-property/ bootph-all;
+					};
+				};
+			};
+/*
+			sha@f8034000 {
+				bootph-all;
+			};
+*/
 			watchdog@fffffe40 {
 				bootph-all;
 				status = "okay";
 			};
 		};
+	};
+};
+
+&mmc0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_cd>;
+
+	slot@0 {
+		reg = <0>;
+		bus-width = <4>;
+		cd-gpios = <&pioC 26 GPIO_ACTIVE_LOW>;
 	};
 };
 
@@ -58,17 +104,6 @@
 
 &slow_osc {
 	atmel,osc-bypass;
-};
-
-&mmc0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_mmc0_clk_cmd_dat0 &pinctrl_mmc0_dat1_3 &pinctrl_mmc0_cd>;
-
-	slot@0 {
-		reg = <0>;
-		bus-width = <4>;
-		cd-gpios = <&pioC 26 GPIO_ACTIVE_LOW>;
-	};
 };
 
 &macb1 {
@@ -87,6 +122,12 @@
 	atmel,has-pmecc;
 	atmel,pmecc-cap = <8>;
 	atmel,pmecc-sector-size = <512>;
+
+	/*
+	 * Note - nand-on-flash-bbt requires the last 4 blocks on
+	 * flash to be reserved for bad block table.  These blocks
+	 * can be used in partitions only if bbt is not stored on flash.
+	 */
 	nand-on-flash-bbt;
 	status = "okay";
 };
@@ -101,4 +142,20 @@
 	num-ports = <3>;
 	atmel,vbus-gpio = <&pioA 2 GPIO_ACTIVE_LOW>;
 	atmel,oc-gpio = <&pioA 4 GPIO_ACTIVE_LOW>;
+};
+/*
+&sha_clk {
+	bootph-all;
+};
+*/
+&mci1_clk {
+	/delete-property/ bootph-all;
+};
+
+&spi0_clk {
+	/delete-property/ bootph-all;
+};
+
+&spi1_clk {
+	/delete-property/ bootph-all;
 };
