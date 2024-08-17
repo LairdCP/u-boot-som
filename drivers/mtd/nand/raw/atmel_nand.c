@@ -1263,6 +1263,9 @@ int __weak atmel_setup_data_interface(struct mtd_info *mtd, int chipnr,
 {
 	const struct nand_sdr_timings *timings;
 
+	if (!conf)
+		return 0;
+
 	timings = nand_get_sdr_timings(conf);
 	if (IS_ERR(timings))
 		return PTR_ERR(timings);
@@ -1758,15 +1761,12 @@ int board_nand_init(struct nand_chip *nand)
 
 void nand_init(void)
 {
-	const struct nand_data_interface *conf;
-
 	/* 1st time nand_init before zero of BSS */
 	memset(&nand_chip, 0, sizeof(nand_chip));
 
 	at91_periph_clk_enable(ATMEL_ID_SMC);
 
-	conf = nand_get_default_data_interface();
-	atmel_setup_data_interface(NULL, 1, conf);
+	atmel_setup_data_interface(NULL, 1, NULL);
 
 	mtd = nand_to_mtd(&nand_chip);
 
