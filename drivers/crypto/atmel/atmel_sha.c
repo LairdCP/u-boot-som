@@ -101,7 +101,8 @@ static void atmel_sha_init(struct sha_ctx *ctx)
 	writel(ATMEL_HASH_CR_FIRST, &sha->cr);
 }
 
-static void atmel_sha_process(struct atmel_sha *sha, const void *in_addr, size_t size)
+static void atmel_sha_process(struct atmel_sha *sha, const void *in_addr,
+	size_t size)
 {
 	const u32 *addr_buf = (u32 *)in_addr;
 	unsigned i;
@@ -118,7 +119,8 @@ static void atmel_sha_process(struct atmel_sha *sha, const void *in_addr, size_t
 	debug("Atmel sha, engine signaled completion\n");
 }
 
-static void atmel_sha_update(struct sha_ctx *ctx, const void *buf, size_t size, size_t chunk_sz)
+static void atmel_sha_update(struct sha_ctx *ctx, const void *buf, size_t size,
+	size_t chunk_sz)
 {
 	const unsigned block_size = ctx->algo >= ATMEL_HASH_SHA384 ? 128 : 64;
 
@@ -133,8 +135,8 @@ static void atmel_sha_update(struct sha_ctx *ctx, const void *buf, size_t size, 
 	if (remaining && size >= fill) {
 		memcpy(ctx->buffer + remaining, buf, fill);
 
-		debug("Atmel sha, handling remainder (%d bytes) in buffer with %d bytes additional\n",
-		      remaining, fill);
+		debug("Atmel sha, handling remainder (%d bytes) in buffer "
+			"with %d bytes additional\n", remaining, fill);
 
 		/* Process 1 block chunk */
 		atmel_sha_process(ctx->sha, ctx->buffer, block_size);
@@ -287,41 +289,51 @@ static struct sha_ctx *atmel_sha_alloc(enum atmel_hash_algos algo)
 	return ctx;
 }
 
+#if CONFIG_IS_ENABLED(HASH)
 /**
  * Computes hash value of input pbuf using h/w acceleration
  *
  * @param in_addr	A pointer to the input buffer
  * @param buflen	Byte length of input buffer
  * @param out_addr	A pointer to the output buffer. When complete
- *			32 or 64 bytes are copied to pout[0]...pout[31]. Thus, a user
- *			should allocate at least 32 bytes at pOut in advance.
+ *			32 or 64 bytes are copied to pout[0]...pout[31]. Thus,
+ *			a user should allocate at least 32 bytes for out_addr
+ *                      in advance.
  * @param chunk_size	chunk size for sha256
  */
 #if CONFIG_IS_ENABLED(SHA1)
-void hw_sha1(const uchar *in_addr, uint buflen, uchar *out_addr, uint chunk_size)
+void hw_sha1(const uchar *in_addr, uint buflen, uchar *out_addr,
+	uint chunk_size)
 {
-	atmel_sha_digest(ATMEL_HASH_SHA1, in_addr, buflen, out_addr, chunk_size);
+	atmel_sha_digest(ATMEL_HASH_SHA1, in_addr, buflen, out_addr,
+		chunk_size);
 }
 #endif
 
 #if CONFIG_IS_ENABLED(SHA256)
-void hw_sha256(const uchar *in_addr, uint buflen, uchar *out_addr, uint chunk_size)
+void hw_sha256(const uchar *in_addr, uint buflen, uchar *out_addr,
+	uint chunk_size)
 {
-	atmel_sha_digest(ATMEL_HASH_SHA256, in_addr, buflen, out_addr, chunk_size);
+	atmel_sha_digest(ATMEL_HASH_SHA256, in_addr, buflen, out_addr,
+		chunk_size);
 }
 #endif
 
 #if CONFIG_IS_ENABLED(SHA384)
-void hw_sha384(const uchar *in_addr, uint buflen, uchar *out_addr, uint chunk_size)
+void hw_sha384(const uchar *in_addr, uint buflen, uchar *out_addr,
+	uint chunk_size)
 {
-	atmel_sha_digest(ATMEL_HASH_SHA384, in_addr, buflen, out_addr, chunk_size);
+	atmel_sha_digest(ATMEL_HASH_SHA384, in_addr, buflen, out_addr,
+		chunk_size);
 }
 #endif
 
 #if CONFIG_IS_ENABLED(SHA512)
-void hw_sha512(const uchar *in_addr, uint buflen, uchar *out_addr, uint chunk_size)
+void hw_sha512(const uchar *in_addr, uint buflen, uchar *out_addr,
+	uint chunk_size)
 {
-	atmel_sha_digest(ATMEL_HASH_SHA512, in_addr, buflen, out_addr, chunk_size);
+	atmel_sha_digest(ATMEL_HASH_SHA512, in_addr, buflen, out_addr,
+		chunk_size);
 }
 #endif
 
@@ -418,9 +430,9 @@ int hw_sha_finish(struct hash_algo *algo, void *ctx, void *dest_buf,
 
 	return 0;
 }
+#endif
 
-#if CONFIG_IS_ENABLED(DM_HASH)
-
+#if IS_ENABLED(CONFIG_DM_HASH)
 static enum atmel_hash_algos dm_hash_algo_decode(enum HASH_ALGO algo)
 {
 	switch (algo) {
@@ -461,7 +473,8 @@ static int dm_hash_init(struct udevice *dev, enum HASH_ALGO algo, void **ctxp)
 	return 0;
 }
 
-static int dm_hash_update(struct udevice *dev, void *ctx, const void *ibuf, uint32_t ilen)
+static int dm_hash_update(struct udevice *dev, void *ctx, const void *ibuf,
+	uint32_t ilen)
 {
 	atmel_sha_update(ctx, ibuf, ilen, ilen + 1);
 
@@ -525,5 +538,4 @@ U_BOOT_DRIVER(hash_atmel) = {
 	.of_match	= atmel_sha_ids,
 	.ops		= &hash_ops_atmel,
 };
-
 #endif
