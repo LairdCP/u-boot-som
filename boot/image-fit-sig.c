@@ -449,7 +449,7 @@ static int fit_config_verify_key(const void *fit, int conf_noffset,
 
 error:
 	printf(" error!\n%s for '%s' hash node in '%s' config node\n",
-	       err_msg, fit_get_name(fit, noffset, NULL),
+	       err_msg, FIT_SIG_NODENAME,
 	       fit_get_name(fit, conf_noffset, NULL));
 	return -EPERM;
 }
