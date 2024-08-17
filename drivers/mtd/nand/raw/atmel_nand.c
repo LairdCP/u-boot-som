@@ -509,7 +509,7 @@ static int pmecc_correction(struct mtd_info *mtd, u32 pmecc_stat, uint8_t *buf,
 				pmecc_correct_data(mtd, buf_pos, ecc, i,
 						   host->pmecc_bytes_per_sector,
 						   err_nbr);
-			} else if (err_nbr == -EBADMSG && 
+			} else if (err_nbr == -EBADMSG &&
 				host->pmecc_version < PMECC_VERSION_SAMA5D4) {
 				ecc_pos = ecc + i * host->pmecc_bytes_per_sector;
 
@@ -576,7 +576,7 @@ static int atmel_nand_pmecc_read_page(struct mtd_info *mtd,
 	return 0;
 }
 
-static int atmel_nand_pmecc_write_page(struct mtd_info *mtd,
+static int __maybe_unused atmel_nand_pmecc_write_page(struct mtd_info *mtd,
 		struct nand_chip *chip, const uint8_t *buf,
 		int oob_required, int page)
 {
@@ -958,7 +958,9 @@ static int atmel_pmecc_nand_init_params(struct nand_chip *nand,
 
 	nand->options |= NAND_NO_SUBPAGE_WRITE;
 	nand->ecc.read_page = atmel_nand_pmecc_read_page;
+#ifndef CONFIG_SPL_BUILD
 	nand->ecc.write_page = atmel_nand_pmecc_write_page;
+#endif
 	nand->ecc.strength = cap;
 
 	/* Check the PMECC ip version */
@@ -1468,6 +1470,7 @@ static int nandflash_detect_onfi(struct nand_chip *chip)
 	/* See erasesize comment */
 	chip->chipsize = 1 << (fls(le32_to_cpu(p->blocks_per_lun)) - 1);
 	chip->chipsize *= (uint64_t)mtd->erasesize * p->lun_count;
+	mtd->size = chip->chipsize;
 	chip->bits_per_cell = p->bits_per_cell;
 
 	if (onfi_feature(chip) & ONFI_FEATURE_16_BIT_BUS)
@@ -1621,6 +1624,88 @@ static int nand_read_page(int block, int page, void *dst)
 }
 #endif /* CONFIG_SPL_NAND_ECC */
 
+#ifndef CONFIG_SPL_NAND_DRIVERS
+
+static int nand_check_erased_buf(void *buf, int len, int bitflips_threshold)
+{
+	const unsigned char *bitmap = buf;
+	int bitflips = 0;
+	int weight;
+
+	for (; len && ((uintptr_t)bitmap) % sizeof(long);
+	     len--, bitmap++) {
+		weight = hweight8(*bitmap);
+		bitflips += BITS_PER_BYTE - weight;
+		if (unlikely(bitflips > bitflips_threshold))
+			return -EBADMSG;
+	}
+
+	for (; len >= 4; len -= 4, bitmap += 4) {
+		weight = hweight32(*((u32 *)bitmap));
+		bitflips += 32 - weight;
+		if (unlikely(bitflips > bitflips_threshold))
+			return -EBADMSG;
+	}
+
+	for (; len > 0; len--, bitmap++) {
+		weight = hweight8(*bitmap);
+		bitflips += BITS_PER_BYTE - weight;
+		if (unlikely(bitflips > bitflips_threshold))
+			return -EBADMSG;
+	}
+
+	return bitflips;
+}
+
+int nand_check_erased_ecc_chunk(void *data, int datalen,
+				void *ecc, int ecclen,
+				void *extraoob, int extraooblen,
+				int bitflips_threshold)
+{
+	int data_bitflips = 0, ecc_bitflips = 0, extraoob_bitflips = 0;
+
+	data_bitflips = nand_check_erased_buf(data, datalen,
+					      bitflips_threshold);
+	if (data_bitflips < 0)
+		return data_bitflips;
+
+	bitflips_threshold -= data_bitflips;
+
+	ecc_bitflips = nand_check_erased_buf(ecc, ecclen, bitflips_threshold);
+	if (ecc_bitflips < 0)
+		return ecc_bitflips;
+
+	bitflips_threshold -= ecc_bitflips;
+
+	extraoob_bitflips = nand_check_erased_buf(extraoob, extraooblen,
+						  bitflips_threshold);
+	if (extraoob_bitflips < 0)
+		return extraoob_bitflips;
+
+	if (data_bitflips)
+		memset(data, 0xff, datalen);
+
+	if (ecc_bitflips)
+		memset(ecc, 0xff, ecclen);
+
+	if (extraoob_bitflips)
+		memset(extraoob, 0xff, extraooblen);
+
+	return data_bitflips + ecc_bitflips + extraoob_bitflips;
+}
+#endif
+
+static void at91_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+{
+	struct nand_chip *chip = mtd_to_nand(mtd);
+
+#ifdef CONFIG_SYS_NAND_DBW_16
+	readsw(chip->IO_ADDR_R, buf, len);
+#else
+	readsb(chip->IO_ADDR_R, buf, len);
+#endif
+}
+
 int at91_nand_wait_ready(struct mtd_info *mtd)
 {
 	struct nand_chip *this = mtd_to_nand(mtd);
@@ -1637,10 +1722,8 @@ int board_nand_init(struct nand_chip *nand)
 	nand->ecc.mode = NAND_ECC_SOFT;
 #ifdef CONFIG_SYS_NAND_DBW_16
 	nand->options = NAND_BUSWIDTH_16;
-	nand->read_buf = nand_read_buf16;
-#else
-	nand->read_buf = nand_read_buf;
 #endif
+	nand->read_buf = at91_nand_read_buf;
 	nand->cmd_ctrl = at91_nand_hwcontrol;
 #ifdef CFG_SYS_NAND_READY_PIN
 	nand->dev_ready = at91_nand_ready;

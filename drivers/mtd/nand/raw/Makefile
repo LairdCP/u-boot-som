@@ -81,6 +81,7 @@ obj-$(CONFIG_NAND_MT7621) += mt7621_nand.o
 
 else  # minimal SPL drivers
 
+obj-$(CONFIG_NAND_ATMEL) += atmel_nand.o
 obj-$(CONFIG_NAND_FSL_ELBC) += fsl_elbc_spl.o
 obj-$(CONFIG_NAND_FSL_IFC) += fsl_ifc_spl.o
 obj-$(CONFIG_NAND_MXC) += mxc_nand_spl.o
