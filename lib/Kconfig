@@ -704,6 +704,17 @@ config SPL_CRC16
 	help
 	  Enables CRC16 support in SPL. This is not normally required.
 
+config CRC16_CCITT
+	bool "Support CRC16 CCITT in SPL"
+	help
+	  Enables CRC16 CCITT support.
+
+config SPL_CRC16_CCITT
+	bool "Support CRC16 CCITT in SPL"
+	depends on SPL
+	help
+	  Enables CRC16 CCITT support in SPL.
+
 config CRC32
 	def_bool y
 	help

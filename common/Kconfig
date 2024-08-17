@@ -1167,7 +1167,6 @@ source "common/spl/Kconfig"
 
 config IMAGE_SIGN_INFO
 	bool
-	select SHA1
 	select SHA256
 	help
 	  Enable image_sign_info helper functions.
@@ -1176,14 +1175,12 @@ if IMAGE_SIGN_INFO
 
 config SPL_IMAGE_SIGN_INFO
 	bool
-	select SHA1
 	select SHA256
 	help
 	  Enable image_sign_info helper functions in SPL.
 
 config VPL_IMAGE_SIGN_INFO
 	bool
-	select SHA1
 	select SHA256
 	help
 	  Enable image_sign_info helper functions in SPL.
