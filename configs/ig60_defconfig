@@ -87,7 +87,7 @@ CONFIG_CMD_NAND_TRIMFFS=y
 CONFIG_CMD_MTDPARTS=y
 CONFIG_CMD_MTDPARTS_SHOW_NET_SIZES=y
 CONFIG_MTDIDS_DEFAULT="nand0=atmel_nand"
-CONFIG_MTDPARTS_DEFAULT="mtdparts=atmel_nand:128k(spl)ro,512k(uboot)ro,128k(env),128k(env_redundant),508M(ubi)"
+CONFIG_MTDPARTS_DEFAULT="mtdparts=atmel_nand:128k(u-boot-spl)ro,512k(u-boot)ro,128k(u-boot-env-a),128k(u-boot-env-b),508M(ubi)"
 CONFIG_CMD_UBI=y
 # CONFIG_CMD_UBIFS is not set
 CONFIG_OF_CONTROL=y
