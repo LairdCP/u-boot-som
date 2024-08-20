@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
 /*
- * Copyright (C) 2018-2020 Ezurio
+ * Copyright (C) 2018 Ezurio
  *
  * Minimal dts for a SPL FIT image payload.
- *
- * SPDX-License-Identifier: GPL-2.0+  X11
  */
 
 /dts-v1/;

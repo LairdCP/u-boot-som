@@ -1,8 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
 /*
  * Copyright (C) 2022 Ezurio
- * Erik Strack <erik.strack@ezurio.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>

@@ -1,9 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
 /*
  * at91-wb50n_common.dtsi - Device Tree file for the WB50n module
  *
- *  Copyright (C) 2018-2020 Laird Connectivity
- *
+ * Copyright (C) 2018 Ezurio
  */
 
 #include "sama5d31.dtsi"

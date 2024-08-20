@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
+/*
+ * Copyright (C) 2024 Ezurio
+ */
 #include <common.h>
 #include <asm/io.h>
 #include <asm/arch/clk.h>
@@ -336,7 +340,7 @@ static u16 onfi_crc16(u16 crc, u8 const *p, size_t len)
 	return crc;
 }
 
-static int nandflash_detect_onfi(void)
+static int __maybe_unused nandflash_detect_onfi(void)
 {
 	unsigned char onfi_ind[4];
 	struct nand_onfi_params p;

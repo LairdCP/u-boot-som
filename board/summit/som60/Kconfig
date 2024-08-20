@@ -1,4 +1,4 @@
-if TARGET_SOM60
+if TARGET_SOM60 || TARGET_IG60 || TARGET_WB50N || TARGET_WB50N_SYSD
 
 config SYS_BOARD
 	default "som60"
@@ -7,48 +7,15 @@ config SYS_VENDOR
 	default "summit"
 
 config SYS_CONFIG_NAME
-	default "som60"
+	default "ig60" if TARGET_IG60
+	default "som60" if TARGET_SOM60
+	default "wb50n" if TARGET_WB50N
+	default "wb50n_sysd" if TARGET_WB50N_SYSD
 
-endif
-
-if TARGET_IG60
-
-config SYS_BOARD
-	default "som60"
-
-config SYS_VENDOR
-	default "summit"
-
-config SYS_CONFIG_NAME
-	default "ig60"
-
-endif
-
-if TARGET_WB50N
-
-config SYS_BOARD
-	default "som60"
-
-config SYS_VENDOR
-	default "summit"
-
-config SYS_CONFIG_NAME
-	default "wb50n"
-
-endif
-
-if TARGET_WB50N_SYSD
-
-config SYS_BOARD
-	default "som60"
-
-config SYS_VENDOR
-	default "summit"
-
-config SYS_CONFIG_NAME
-	default "wb50n_sysd"
-
-endif
+config TARGET_WB50N_ALL
+	bool
+	default y
+	depends on TARGET_WB50N || TARGET_WB50N_SYSD
 
 config SYS_EEPROM_SETUP
 	bool "Run-time EEPROM based Module Configuration"
@@ -58,13 +25,14 @@ config SYS_EEPROM_SETUP
 	select SYS_I2C_AT91
 	select I2C_EEPROM
 	select NVMEM
-	select ID_EEPROM
+	select SPL_DM_I2C if SUPPORT_SPL
 	select SPL_I2C if SUPPORT_SPL
 	select SPL_I2C_EEPROM if SUPPORT_SPL
 	select SPL_NVMEM if SUPPORT_SPL
 
 config SPL_SYS_MENU
 	bool "Board configuration SPL Menu"
+	depends on SUPPORT_SPL
 	depends on SYS_EEPROM_SETUP
 	select SPL_DISPLAY_PRINT
 	help
@@ -72,3 +40,13 @@ config SPL_SYS_MENU
 		board HW ID and MAC addresses for manufacturing.
 		HW ID identifies DRAM type insttalled on the module
 		This is required to run prior to initializing DRAM
+
+config CMD_MAC
+	bool "MAC and HW ID commands"
+	depends on CMDLINE
+	depends on SYS_EEPROM_SETUP
+	help
+		Enables configuration of MAC and HW ID from the
+		command line
+
+endif

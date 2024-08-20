@@ -1,8 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
 /*
  * Copyright (C) 2020 Ezurio
- * Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -18,7 +16,7 @@ DECLARE_GLOBAL_DATA_PTR;
 
 /* ------------------------------------------------------------------------- */
 /*
- * Miscelaneous platform dependent initializations
+ * Miscellaneous platform dependent initializations
  */
 
 #ifdef CONFIG_DEBUG_UART_BOARD_INIT

@@ -1,9 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
 /*
  * Copyright (C) 2018 Ezurio
- *	Ben Whitten <ben.whitten@ezurio.com>
- *	Boris Krasnovskiy <boris.krasnovskiy@ezurio.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -65,7 +62,7 @@ typedef struct {
 } ram_config_t;
 
 static const ram_config_t ram_configs[] = {
-#if defined(CONFIG_TARGET_WB50N) || defined(CONFIG_TARGET_WB50N_SYSD)
+#if defined(CONFIG_TARGET_WB50N_ALL)
 	[MT46H16M32LF] = {
 		.name = "W949D2DB",
 		.type = RAM_TYPE_LPDDR1,
@@ -287,7 +284,7 @@ void som60_fs_key_inject(void)
 
 	memcpy(key, fs_key, fs_key_len);
 }
-#else
+#else /* ! CONFIG_FIT_SIGNATURE */
 static void som60_fs_key_inject(void)
 {
 	u8	*key = (u8 *)FS_KEY_WINDOW;
@@ -295,7 +292,7 @@ static void som60_fs_key_inject(void)
 	/* Zero out key area just in case */
 	memset(key, 0, FS_MAX_KEY_SIZE);
 }
-#endif
+#endif /* ! CONFIG_FIT_SIGNATURE */
 
 int board_late_init(void)
 {
@@ -359,7 +356,7 @@ int board_init(void)
 void board_quiesce_devices(void)
 {
 #ifdef CONFIG_MTD_RAW_NAND
-#ifndef CONFIG_TARGET_WB50N
+#if !defined(CONFIG_TARGET_WB50N_ALL)
 	/* Activate Flash Write Protect discrete,
 	 * so that flash enter standby if not used in kernel */
 	at91_set_pio_output(AT91_PIO_PORTE, 14, 0);
@@ -405,7 +402,7 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 	fdt_fixup_mtdparts(blob, nodes, ARRAY_SIZE(nodes));
 #endif
 
-#if defined(CONFIG_TARGET_WB50N_SYSD) || defined(CONFIG_TARGET_WB50N)
+#if defined(CONFIG_TARGET_WB50N_ALL)
 	dts_set_mac(blob, "/ahb/apb/ethernet@f802c000", "ethaddr");
 #else
 	dts_set_mac(blob, "/ahb/apb/ethernet@f0028000", "ethaddr");
@@ -414,18 +411,17 @@ int ft_board_setup(void *blob, struct bd_info *bd)
 
 	return 0;
 }
-#endif
+#endif /* CONFIG_OF_BOARD_SETUP */
 
-#else /* SPL */
+#else /* CONFIG_SPL_BUILD */
 
 int is_micron(void);
 
 static int board_hw_id(void)
 {
-#if defined(CONFIG_TARGET_WB50N) || defined(CONFIG_TARGET_WB50N_SYSD)
+#if defined(CONFIG_TARGET_WB50N_ALL)
 	return LEGACY_BOARD_HW_ID;
-#else
-#if defined(CONFIG_SYS_EEPROM_SETUP)
+#elif defined(CONFIG_SPL_SYS_EEPROM_SETUP)
 	int hw_id = board_hw_id_nvmem_read();
 
 	if (hw_id > 0 && hw_id <= MAX_BOARD_HW_ID)
@@ -434,7 +430,6 @@ static int board_hw_id(void)
 	return (is_micron() ? MT29C2G24MAAAAKAMD_5 :
 		DDR2_JSFBAB3YH3BBG_425_JSFBAB3Y63GBG_425) +
 		(nand_size() == SZ_512M);
-#endif
 }
 
 int board_early_init_f(void)
@@ -548,12 +543,14 @@ void spl_board_init(void)
 	/* Run after spl_early_init because using timer delay */
 	at91sama5d3_slowclock_init();
 
+	/* Disable SMD to resolve power consumption */
 	at91_disable_smd_clock();
 
-	/* Configure and disable Radio */
-#ifdef CONFIG_TARGET_WB50N
+#if defined(CONFIG_TARGET_WB50N_ALL)
+	/* Disable WB50n Wi-Fi Radio */
 	at91_set_pio_output(AT91_PIO_PORTE, 3, 0);
 #endif
+	/* Disable WB50n Bluetooth and 60 Radio */
 	at91_set_pio_output(AT91_PIO_PORTE, 5, 0);
 }
 
@@ -567,14 +564,13 @@ int board_fit_config_name_match(const char *name)
 }
 #endif
 
-
 // Reference at91bootstrap3/board/sama5d3x_cmp/sama5dx_cmp.c lpddr2_init()
 void mem_init_lpddr2(const struct atmel_mpddrc_config *mpddr_value)
 {
 	const struct atmel_mpddr *mpddr = (struct atmel_mpddr *)ATMEL_BASE_MPDDRC;
 	u32 reg;
 
-	// Reference does not open/close input buffers
+	/* Reference does not open/close input buffers */
 
 	/* Enable MPDDR clock */
 	at91_periph_clk_enable(ATMEL_ID_MPDDRC);

@@ -1,9 +1,6 @@
-/* SPDX-License-Identifier: GPL-2.0+
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
+/*
  * Copyright (C) 2022 Ezurio
- * Erik Strack <erik.strack@ezurio.com>
- *
- * Portions Copyright 2006 Freescale Semiconductor
- * York Sun (yorksun@freescale.com)
  */
 
 #include <common.h>
@@ -39,7 +36,7 @@ static int nvmem_cell_rw(const char *name, bool use_dvk, bool write, void *p, si
 int board_hw_id_nvmem_read(void)
 {
 	int ret;
-	u16 hw_id;
+	uint16_t hw_id;
 
 	ret = nvmem_cell_rw("hw-id", false, false, &hw_id, sizeof(hw_id));
 	if (ret)
@@ -48,7 +45,7 @@ int board_hw_id_nvmem_read(void)
 	return hw_id;
 }
 
-int board_hw_id_nvmem_write(u16 hw_id)
+int board_hw_id_nvmem_write(uint16_t hw_id)
 {
 	return nvmem_cell_rw("hw-id", false, true, &hw_id, sizeof(hw_id));
 }
@@ -162,11 +159,10 @@ int set_mac_address(const char *buf, bool use_dvk)
 	return 0;
 }
 
-#if CONFIG_IS_ENABLED(ID_EEPROM)
 /**
  * read_macs_eeproms - read the EEPROMs MAC into memory
  */
-static int read_macs_eeproms(u8 *mac0, u8 *mac1)
+static int __maybe_unused read_mac_eeprom(u8 *mac0, u8 *mac1)
 {
 	int ret = -1;
 
@@ -235,7 +231,7 @@ int mac_read_from_eeprom(void)
 		return 0;
 	}
 
-	ret = read_macs_eeproms(mac0, mac1);
+	ret = read_mac_eeprom(mac0, mac1);
 	if (ret) {
 		puts("No MACs found\n");
 		return 0;
@@ -250,30 +246,27 @@ int mac_read_from_eeprom(void)
 	return 0;
 }
 
-int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+#ifdef CONFIG_CMD_MAC
+static int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 {
 	int ret;
-	char cmd;
 
-	if (argc == 1) {
-		read_show_mac(true);
-		return 0;
-	}
-
-	cmd = argv[1][0];
-
-	if (cmd == 'r') {
-		read_show_mac(true);
-		return 0;
-	}
-
-	if (cmd == 'i')
-		return 0;
-
-	/* We know we have at least one parameter  */
+	char cmd = argc > 1 ? argv[1][0] : 'r';
 
 	switch (cmd) {
-	case '1':       /* "mac 1" */
+	case 'i':
+		ret = board_hw_id_nvmem_read();
+		if (ret < 0)
+			printf("EEPROM Read Error %d\n", ret);
+		else
+			printf("hw id: 0x%x\n", ret);
+		break;
+
+	case 'r':
+		read_show_mac(true);
+		break;
+
+	case 'w':
 		/* we ignore the first parameter, specified as "1" on command line for historic reasons */
 		ret = set_mac_address(argv[2], board_hw_id_nvmem_read() < 0);
 		switch (ret) {
@@ -283,7 +276,7 @@ int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 
 		case -ERANGE:
 			printf("Invalid MAC address entered\n");
-			printf("Usage: mac 1 XX:XX:XX:XX:XX:XX\n");
+			printf("Usage: mac write XX:XX:XX:XX:XX:XX\n");
 			break;
 
 		default:
@@ -298,4 +291,19 @@ int do_mac(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
 
 	return 0;
 }
+
+U_BOOT_LONGHELP(mac,
+	"[read|write|id]\n"
+	"mac read\n"
+	"    - display EEPROM content\n"
+	"mac write string\n"
+	"    - program MAC addr, expecting colon separated string"
+	"mac id\n"
+	"    - program hardware id\n");
+
+U_BOOT_CMD(
+	mac, 3, 1,  do_mac,
+	"display and program the system ID and MAC addresses in EEPROM",
+	mac_help_text);
+
 #endif

@@ -1,10 +1,8 @@
+// SPDX-License-Identifier: LicenseRef-Ezurio-Clause
 /*
- * at91-ig60sd.dts - Device Tree file for the Sentrius IG60 SD
+ * at91-ig60ll.dts - Device Tree file for the Sentrius IG60 Laird Linux
  *
- *  Copyright (C) 2019 Ezurio,
- *		  2019 Vishal Verma <vishal.verma@ezurio.com>
- *
- * Licensed under GPLv2 or later.
+ * Copyright (C) 2019 Ezurio
  */
 
 /dts-v1/;
