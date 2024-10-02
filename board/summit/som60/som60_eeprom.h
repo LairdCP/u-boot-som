@@ -12,4 +12,6 @@ int read_show_mac(bool use_dvk);
 int board_hw_id_nvmem_read(void);
 int board_hw_id_nvmem_write(uint16_t val);
 
+int mac_read_from_eeprom(void);
+
 #endif
