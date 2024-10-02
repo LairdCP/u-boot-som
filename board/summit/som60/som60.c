@@ -310,7 +310,9 @@ int board_late_init(void)
 	env_set("lrd_name", name);
 #endif
 
+#ifdef CONFIG_SYS_EEPROM_SETUP
 	mac_read_from_eeprom();
+#endif
 
 	version = env_get("version");
 	need_version = !version || strcmp(version, PLAIN_VERSION);
